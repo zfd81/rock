@@ -1,7 +1,15 @@
 package parrot
 
-import "fmt"
+import (
+	"github.com/robertkrimen/otto"
+)
 
 func main() {
-	fmt.Println("hello")
+	vm := otto.New()
+	vm.Run(`
+var  str = '{"a":"a1","b":"b1"}';
+  var obj1 = eval('('+xyzzy+')'); //使用eval函数
+
+   console.log(obj1.msg); // 4
+`)
 }

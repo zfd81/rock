@@ -51,7 +51,7 @@ func (hc *HttpClient) do(req *http.Request, header map[string]string) (*http.Res
 }
 
 func (hc *HttpClient) Get(url string, header map[string]string) (resp *http.Response, err error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
