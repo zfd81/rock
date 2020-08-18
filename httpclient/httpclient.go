@@ -99,6 +99,7 @@ func Get(url string, header map[string]string) *Response {
 		log.Println(err)
 		return response
 	}
+
 	defer func() {
 	_:
 		resp.Body.Close()
@@ -124,6 +125,7 @@ func Post(url string, data map[string]interface{}, header map[string]string) *Re
 		log.Println(err)
 		return response
 	}
+
 	defer func() {
 	_:
 		resp.Body.Close()
@@ -149,6 +151,53 @@ func PostForm(respUrl string, data map[string]interface{}, header map[string]str
 		log.Println(err)
 		return response
 	}
+
+	defer func() {
+	_:
+		resp.Body.Close()
+	}()
+
+	err = response.wrap(resp)
+	if err != nil {
+		log.Println(err)
+	}
+	return response
+}
+
+func Put(url string, data map[string]interface{}, header map[string]string) *Response {
+	response := &Response{StatusCode: 500}
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
+	resp, err := client.Put(url, "application/json;charset=UTF-8", bytes.NewBuffer(jsonStr), header)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
+	defer func() {
+	_:
+		resp.Body.Close()
+	}()
+
+	err = response.wrap(resp)
+	if err != nil {
+		log.Println(err)
+	}
+	return response
+}
+
+func Delete(url string, header map[string]string) *Response {
+	response := &Response{StatusCode: 500}
+	resp, err := client.Delete(url, header)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	defer func() {
 	_:
 		resp.Body.Close()
