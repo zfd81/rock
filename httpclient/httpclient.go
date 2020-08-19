@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cast"
+	"github.com/zfd81/rooster/util"
 )
 
 type Response struct {
@@ -92,8 +93,15 @@ var client = HttpClient{
 	client: &http.Client{},
 }
 
-func Get(url string, header map[string]string) *Response {
+func Get(url string, data map[string]interface{}, header map[string]string) *Response {
 	response := &Response{StatusCode: 500}
+
+	url, err := wrapPath(url, data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	resp, err := client.Get(url, header)
 	if err != nil {
 		log.Println(err)
@@ -114,6 +122,13 @@ func Get(url string, header map[string]string) *Response {
 
 func Post(url string, data map[string]interface{}, header map[string]string) *Response {
 	response := &Response{StatusCode: 500}
+
+	url, err := wrapPath(url, data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	jsonStr, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
@@ -138,15 +153,22 @@ func Post(url string, data map[string]interface{}, header map[string]string) *Re
 	return response
 }
 
-func PostForm(respUrl string, data map[string]interface{}, header map[string]string) *Response {
+func PostForm(reqUrl string, data map[string]interface{}, header map[string]string) *Response {
 	response := &Response{StatusCode: 500}
+
+	reqUrl, err := wrapPath(reqUrl, data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	values := url.Values{}
-	if data != nil {
+	if data != nil && len(data) != 0 {
 		for k, v := range data {
 			values.Add(k, cast.ToString(v))
 		}
 	}
-	resp, err := client.PostForm(respUrl, values, header)
+	resp, err := client.PostForm(reqUrl, values, header)
 	if err != nil {
 		log.Println(err)
 		return response
@@ -166,6 +188,13 @@ func PostForm(respUrl string, data map[string]interface{}, header map[string]str
 
 func Put(url string, data map[string]interface{}, header map[string]string) *Response {
 	response := &Response{StatusCode: 500}
+
+	url, err := wrapPath(url, data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	jsonStr, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
@@ -190,8 +219,15 @@ func Put(url string, data map[string]interface{}, header map[string]string) *Res
 	return response
 }
 
-func Delete(url string, header map[string]string) *Response {
+func Delete(url string, data map[string]interface{}, header map[string]string) *Response {
 	response := &Response{StatusCode: 500}
+
+	url, err := wrapPath(url, data)
+	if err != nil {
+		log.Println(err)
+		return response
+	}
+
 	resp, err := client.Delete(url, header)
 	if err != nil {
 		log.Println(err)
@@ -208,4 +244,19 @@ func Delete(url string, header map[string]string) *Response {
 		log.Println(err)
 	}
 	return response
+}
+
+func wrapPath(url string, param map[string]interface{}) (string, error) {
+	if param != nil {
+		return util.ReplaceBetween(url, "{", "}", func(i int, s int, e int, c string) (string, error) {
+			key := strings.TrimSpace(c)
+			value, found := param[key]
+			if found {
+				delete(param, key)
+				return cast.ToString(value), nil
+			}
+			return "", nil
+		})
+	}
+	return url, nil
 }
