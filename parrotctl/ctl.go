@@ -34,6 +34,7 @@ func init() {
 
 	rootCmd.AddCommand(
 		cmd.NewVersionCommand(),
+		cmd.NewTestCommand(),
 	)
 }
 
