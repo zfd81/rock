@@ -42,16 +42,16 @@ type HttpClient struct {
 	Timeout time.Duration
 }
 
-func (hc *HttpClient) do(req *http.Request, header map[string]string) (*http.Response, error) {
+func (hc *HttpClient) do(req *http.Request, header map[string]interface{}) (*http.Response, error) {
 	if header != nil {
 		for k, v := range header {
-			req.Header.Set(k, v)
+			req.Header.Set(k, cast.ToString(v))
 		}
 	}
 	return hc.client.Do(req)
 }
 
-func (hc *HttpClient) Get(url string, header map[string]string) (resp *http.Response, err error) {
+func (hc *HttpClient) Get(url string, header map[string]interface{}) (resp *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (hc *HttpClient) Get(url string, header map[string]string) (resp *http.Resp
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) Post(url, contentType string, body io.Reader, header map[string]string) (resp *http.Response, err error) {
+func (hc *HttpClient) Post(url, contentType string, body io.Reader, header map[string]interface{}) (resp *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
@@ -68,11 +68,11 @@ func (hc *HttpClient) Post(url, contentType string, body io.Reader, header map[s
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) PostForm(url string, data url.Values, header map[string]string) (resp *http.Response, err error) {
+func (hc *HttpClient) PostForm(url string, data url.Values, header map[string]interface{}) (resp *http.Response, err error) {
 	return hc.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()), header)
 }
 
-func (hc *HttpClient) Put(url, contentType string, body io.Reader, header map[string]string) (resp *http.Response, err error) {
+func (hc *HttpClient) Put(url, contentType string, body io.Reader, header map[string]interface{}) (resp *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodPut, url, body)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (hc *HttpClient) Put(url, contentType string, body io.Reader, header map[st
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) Delete(url string, header map[string]string) (resp *http.Response, err error) {
+func (hc *HttpClient) Delete(url string, header map[string]interface{}) (resp *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ var client = HttpClient{
 	client: &http.Client{},
 }
 
-func Get(url string, data map[string]interface{}, header map[string]string) *Response {
+func Get(url string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
 
 	url, err := wrapPath(url, data)
@@ -120,7 +120,7 @@ func Get(url string, data map[string]interface{}, header map[string]string) *Res
 	return response
 }
 
-func Post(url string, data map[string]interface{}, header map[string]string) *Response {
+func Post(url string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
 
 	url, err := wrapPath(url, data)
@@ -153,7 +153,7 @@ func Post(url string, data map[string]interface{}, header map[string]string) *Re
 	return response
 }
 
-func PostForm(reqUrl string, data map[string]interface{}, header map[string]string) *Response {
+func PostForm(reqUrl string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
 
 	reqUrl, err := wrapPath(reqUrl, data)
@@ -186,7 +186,7 @@ func PostForm(reqUrl string, data map[string]interface{}, header map[string]stri
 	return response
 }
 
-func Put(url string, data map[string]interface{}, header map[string]string) *Response {
+func Put(url string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
 
 	url, err := wrapPath(url, data)
@@ -219,7 +219,7 @@ func Put(url string, data map[string]interface{}, header map[string]string) *Res
 	return response
 }
 
-func Delete(url string, data map[string]interface{}, header map[string]string) *Response {
+func Delete(url string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
 
 	url, err := wrapPath(url, data)
