@@ -2,9 +2,10 @@ package script
 
 import (
 	"bytes"
-	"github.com/robertkrimen/otto"
-	"io/ioutil"
 	"log"
+
+	"github.com/gobuffalo/packr"
+	"github.com/robertkrimen/otto"
 )
 
 type Function func(call otto.FunctionCall) otto.Value
@@ -23,16 +24,19 @@ var (
 )
 
 func init() {
-	content, err := ioutil.ReadFile(sdkFile)
+	box := packr.NewBox("./")
+	src, err := box.FindString(sdkFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	sdkSource = content
+	sdkSource = []byte(src)
 }
 
 func New() *JavaScriptImpl {
-	return &JavaScriptImpl{
+	se := &JavaScriptImpl{
 		vm:     otto.New(),
 		buffer: bytes.NewBuffer(sdkSource),
 	}
+	se.AddFunc("_post", post)
+	return se
 }

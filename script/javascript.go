@@ -2,6 +2,7 @@ package script
 
 import (
 	"bytes"
+
 	"github.com/robertkrimen/otto"
 )
 
@@ -15,7 +16,9 @@ func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
 }
 
 func (se *JavaScriptImpl) AddFunc(name string, function Function) error {
-	return se.vm.Set(name, function)
+	return se.vm.Set(name, func(call otto.FunctionCall) otto.Value {
+		return function(call)
+	})
 }
 
 func (se *JavaScriptImpl) SetScript(src string) {
