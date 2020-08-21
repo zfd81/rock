@@ -37,7 +37,7 @@ func New() *JavaScriptImpl {
 		vm:     otto.New(),
 		buffer: bytes.NewBuffer(sdkSource),
 	}
-	se.AddFunc("_get", get)
-	se.AddFunc("_post", post)
+	se.AddFunc("_http_get", get)
+	se.AddFunc("_http_post", post)
 	return se
 }
