@@ -11,7 +11,7 @@ var _ = {
                 },
                 catch: function (func) {
                     if (_.status(this.response) != 200) {
-                        func(_.content(this.response), _.header(this.response), _.status(this.response));
+                        func(_.status(this.response), _.content(this.response), _.header(this.response));
                     }
                 }
             }
