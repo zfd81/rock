@@ -9,7 +9,16 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-func get(call otto.FunctionCall) (value otto.Value) {
+func Log(se ScriptEngine) func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		for _, arg := range call.ArgumentList {
+			se.Println(arg.ToString())
+		}
+		return otto.Value{}
+	}
+}
+
+func Get(call otto.FunctionCall) (value otto.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}
@@ -42,7 +51,7 @@ func get(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func post(call otto.FunctionCall) (value otto.Value) {
+func Post(call otto.FunctionCall) (value otto.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}

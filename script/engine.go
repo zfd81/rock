@@ -15,7 +15,8 @@ type ScriptEngine interface {
 	AddFunc(name string, function Function) error
 	SetScript(src string)
 	AddScript(src string)
-	Run() error
+	Run() (string, error)
+	Println(args ...interface{}) error
 }
 
 var (
@@ -35,9 +36,11 @@ func init() {
 func New() *JavaScriptImpl {
 	se := &JavaScriptImpl{
 		vm:     otto.New(),
+		log:    new(bytes.Buffer),
 		buffer: bytes.NewBuffer(sdkSource),
 	}
-	se.AddFunc("_http_get", get)
-	se.AddFunc("_http_post", post)
+	se.AddFunc("_sys_log", Log(se))
+	se.AddFunc("_http_get", Get)
+	se.AddFunc("_http_post", Post)
 	return se
 }

@@ -3,11 +3,14 @@ package script
 import (
 	"bytes"
 
+	"github.com/spf13/cast"
+
 	"github.com/robertkrimen/otto"
 )
 
 type JavaScriptImpl struct {
 	vm     *otto.Otto
+	log    *bytes.Buffer
 	buffer *bytes.Buffer
 }
 
@@ -30,7 +33,17 @@ func (se *JavaScriptImpl) AddScript(src string) {
 	se.buffer.WriteString(src)
 }
 
-func (se *JavaScriptImpl) Run() (err error) {
-	_, err = se.vm.Run(se.buffer.String())
-	return
+func (se *JavaScriptImpl) Run() (string, error) {
+	_, err := se.vm.Run(se.buffer.String())
+	log := se.log.String()
+	se.log.Reset()
+	return log, err
+}
+
+func (se *JavaScriptImpl) Println(args ...interface{}) error {
+	for _, arg := range args {
+		se.log.WriteString(cast.ToString(arg))
+	}
+	se.log.WriteString("\n")
+	return nil
 }

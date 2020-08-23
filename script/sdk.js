@@ -19,7 +19,7 @@ var _ = {
         }
     },
     log: function (msg) {
-        console.log(msg);
+        _sys_log(msg);
     },
     status: function (resp) {
         return resp["StatusCode"];
