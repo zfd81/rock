@@ -3,7 +3,6 @@ package httpclient
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,25 +15,9 @@ import (
 )
 
 type Response struct {
-	Status     string
 	StatusCode int
 	Header     map[string]string
 	Content    string
-}
-
-func (r *Response) wrap(resp *http.Response) error {
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	r.Status = resp.Status
-	r.StatusCode = resp.StatusCode
-	r.Header = map[string]string{}
-	for k, v := range resp.Header {
-		r.Header[k] = v[0]
-	}
-	r.Content = string(body)
-	return nil
 }
 
 type HttpClient struct {
@@ -42,16 +25,41 @@ type HttpClient struct {
 	Timeout time.Duration
 }
 
-func (hc *HttpClient) do(req *http.Request, header map[string]interface{}) (*http.Response, error) {
+func (hc *HttpClient) do(req *http.Request, header map[string]interface{}) (*Response, error) {
 	if header != nil {
 		for k, v := range header {
 			req.Header.Set(k, cast.ToString(v))
 		}
 	}
-	return hc.client.Do(req)
+
+	resp, err := hc.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		resp.Body.Close()
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Response{
+		StatusCode: resp.StatusCode,
+		Header:     map[string]string{},
+		Content:    string(body),
+	}
+
+	for k, v := range resp.Header {
+		response.Header[k] = v[0]
+	}
+
+	return response, nil
 }
 
-func (hc *HttpClient) Get(url string, header map[string]interface{}) (resp *http.Response, err error) {
+func (hc *HttpClient) Get(url string, header map[string]interface{}) (resp *Response, err error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -59,8 +67,12 @@ func (hc *HttpClient) Get(url string, header map[string]interface{}) (resp *http
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) Post(url, contentType string, body io.Reader, header map[string]interface{}) (resp *http.Response, err error) {
-	req, err := http.NewRequest(http.MethodPost, url, body)
+func (hc *HttpClient) Post(url, contentType string, data interface{}, header map[string]interface{}) (resp *Response, err error) {
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +80,16 @@ func (hc *HttpClient) Post(url, contentType string, body io.Reader, header map[s
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) PostForm(url string, data url.Values, header map[string]interface{}) (resp *http.Response, err error) {
+func (hc *HttpClient) PostForm(url string, data url.Values, header map[string]interface{}) (resp *Response, err error) {
 	return hc.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()), header)
 }
 
-func (hc *HttpClient) Put(url, contentType string, body io.Reader, header map[string]interface{}) (resp *http.Response, err error) {
-	req, err := http.NewRequest(http.MethodPut, url, body)
+func (hc *HttpClient) Put(url, contentType string, data interface{}, header map[string]interface{}) (resp *Response, err error) {
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +97,7 @@ func (hc *HttpClient) Put(url, contentType string, body io.Reader, header map[st
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) Delete(url string, header map[string]interface{}) (resp *http.Response, err error) {
+func (hc *HttpClient) Delete(url string, header map[string]interface{}) (resp *Response, err error) {
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
@@ -89,9 +105,13 @@ func (hc *HttpClient) Delete(url string, header map[string]interface{}) (resp *h
 	return hc.do(req, header)
 }
 
-var client = HttpClient{
-	client: &http.Client{},
+func New() *HttpClient {
+	return &HttpClient{
+		client: &http.Client{},
+	}
 }
+
+var client = New()
 
 func Get(url string, data map[string]interface{}, header map[string]interface{}) *Response {
 	response := &Response{StatusCode: 500}
@@ -108,16 +128,7 @@ func Get(url string, data map[string]interface{}, header map[string]interface{})
 		return response
 	}
 
-	defer func() {
-	_:
-		resp.Body.Close()
-	}()
-
-	err = response.wrap(resp)
-	if err != nil {
-		log.Println(err)
-	}
-	return response
+	return resp
 }
 
 func Post(url string, data map[string]interface{}, header map[string]interface{}) *Response {
@@ -129,28 +140,13 @@ func Post(url string, data map[string]interface{}, header map[string]interface{}
 		return response
 	}
 
-	jsonStr, err := json.Marshal(data)
+	resp, err := client.Post(url, "application/json;charset=UTF-8", data, header)
 	if err != nil {
 		log.Println(err)
 		return response
 	}
 
-	resp, err := client.Post(url, "application/json;charset=UTF-8", bytes.NewBuffer(jsonStr), header)
-	if err != nil {
-		log.Println(err)
-		return response
-	}
-
-	defer func() {
-	_:
-		resp.Body.Close()
-	}()
-
-	err = response.wrap(resp)
-	if err != nil {
-		log.Println(err)
-	}
-	return response
+	return resp
 }
 
 func PostForm(reqUrl string, data map[string]interface{}, header map[string]interface{}) *Response {
@@ -174,16 +170,7 @@ func PostForm(reqUrl string, data map[string]interface{}, header map[string]inte
 		return response
 	}
 
-	defer func() {
-	_:
-		resp.Body.Close()
-	}()
-
-	err = response.wrap(resp)
-	if err != nil {
-		log.Println(err)
-	}
-	return response
+	return resp
 }
 
 func Put(url string, data map[string]interface{}, header map[string]interface{}) *Response {
@@ -195,28 +182,13 @@ func Put(url string, data map[string]interface{}, header map[string]interface{})
 		return response
 	}
 
-	jsonStr, err := json.Marshal(data)
+	resp, err := client.Put(url, "application/json;charset=UTF-8", data, header)
 	if err != nil {
 		log.Println(err)
 		return response
 	}
 
-	resp, err := client.Put(url, "application/json;charset=UTF-8", bytes.NewBuffer(jsonStr), header)
-	if err != nil {
-		log.Println(err)
-		return response
-	}
-
-	defer func() {
-	_:
-		resp.Body.Close()
-	}()
-
-	err = response.wrap(resp)
-	if err != nil {
-		log.Println(err)
-	}
-	return response
+	return resp
 }
 
 func Delete(url string, data map[string]interface{}, header map[string]interface{}) *Response {
@@ -234,16 +206,7 @@ func Delete(url string, data map[string]interface{}, header map[string]interface
 		return response
 	}
 
-	defer func() {
-	_:
-		resp.Body.Close()
-	}()
-
-	err = response.wrap(resp)
-	if err != nil {
-		log.Println(err)
-	}
-	return response
+	return resp
 }
 
 func wrapPath(url string, param map[string]interface{}) (string, error) {
