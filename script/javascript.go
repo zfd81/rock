@@ -2,10 +2,16 @@ package script
 
 import (
 	"bytes"
+	"fmt"
+	"time"
 
 	"github.com/spf13/cast"
 
 	"github.com/robertkrimen/otto"
+)
+
+const (
+	logFormat = "[LOG] %s "
 )
 
 type JavaScriptImpl struct {
@@ -41,6 +47,7 @@ func (se *JavaScriptImpl) Run() (string, error) {
 }
 
 func (se *JavaScriptImpl) Println(args ...interface{}) error {
+	se.log.WriteString(fmt.Sprintf(logFormat, time.Now().Format("2006-01-02 15:04:05.000")))
 	for _, arg := range args {
 		se.log.WriteString(cast.ToString(arg))
 	}

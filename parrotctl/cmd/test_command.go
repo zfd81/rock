@@ -1,14 +1,16 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/zfd81/parrot/httpclient"
+
 	"github.com/spf13/cobra"
 	"github.com/zfd81/parrot/meta"
-	"github.com/zfd81/parrot/script"
 	"gopkg.in/yaml.v2"
 )
 
@@ -50,15 +52,20 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 		v := readParameterInteractive(param.Name)
 		param.Value = v
 	}
-	se := script.New()
-	for _, param := range serv.Params {
-		se.AddVar(param.Name, param.Value)
-	}
-	se.AddScript(serv.Script)
-	err = se.Run()
+
+	client := httpclient.New()
+	url := fmt.Sprintf("http://%s/parrot/api/test", globalFlags.Endpoints[0])
+	resp, err := client.Post(url, "application/json;charset=UTF-8", serv, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	data := map[string]string{}
+	err = json.Unmarshal([]byte(resp.Content), &data)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(data["log"])
 }
 
 func readParameterInteractive(name string) string {

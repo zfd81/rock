@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-)
 
-const (
-	Version = "1.0"
+	"github.com/spf13/cobra"
 )
 
 func NewVersionCommand() *cobra.Command {
