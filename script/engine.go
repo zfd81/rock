@@ -8,6 +8,11 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
+var (
+	sdkFile   = "sdk.js"
+	sdkSource []byte
+)
+
 type Function func(call otto.FunctionCall) otto.Value
 
 type ScriptEngine interface {
@@ -15,14 +20,15 @@ type ScriptEngine interface {
 	AddFunc(name string, function Function) error
 	SetScript(src string)
 	AddScript(src string)
-	Run() (string, error)
-	Println(args ...interface{}) error
+	Run() error
 }
 
-var (
-	sdkFile   = "sdk.js"
-	sdkSource []byte
-)
+type Environment interface {
+	Println(args ...interface{}) error
+	SetRespStatus(code int)
+	AddRespHeader(name string, value interface{})
+	SetRespContent(json string)
+}
 
 func init() {
 	box := packr.NewBox("./")
@@ -33,14 +39,10 @@ func init() {
 	sdkSource = []byte(src)
 }
 
-func New() *JavaScriptImpl {
-	se := &JavaScriptImpl{
+func New() ScriptEngine {
+	return &JavaScriptImpl{
 		vm:     otto.New(),
-		log:    new(bytes.Buffer),
+		sdk:    string(sdkSource),
 		buffer: bytes.NewBuffer(sdkSource),
 	}
-	se.AddFunc("_sys_log", Log(se))
-	se.AddFunc("_http_get", Get)
-	se.AddFunc("_http_post", Post)
-	return se
 }

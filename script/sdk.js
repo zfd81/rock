@@ -4,14 +4,14 @@ var _ = {
             var promise = {
                 response: {},
                 then: function (func) {
-                    if (_.status(this.response) == 200) {
-                        func(_.content(this.response), _.header(this.response));
+                    if (_.resp.status(this.response) == 200) {
+                        func(_.resp.content(this.response), _.resp.header(this.response));
                     }
                     return this
                 },
                 catch: function (func) {
-                    if (_.status(this.response) != 200) {
-                        func(_.status(this.response), _.content(this.response), _.header(this.response));
+                    if (_.resp.status(this.response) != 200) {
+                        func(_.resp.status(this.response), _.resp.content(this.response), _.resp.header(this.response));
                     }
                 }
             }
@@ -21,21 +21,26 @@ var _ = {
     log: function (msg) {
         _sys_log(msg);
     },
-    status: function (resp) {
-        return resp["StatusCode"];
-    },
-    body: function (resp) {
-        return resp["Content"];
-    },
-    content: function (resp) {
-        var body = this.body(resp)
-        if (typeof body == "undefined" || body == null || body == "") {
-            return {}
+    resp: {
+        status: function (resp) {
+            return resp["StatusCode"];
+        },
+        body: function (resp) {
+            return resp["Content"];
+        },
+        content: function (resp) {
+            var body = this.body(resp)
+            if (typeof body == "undefined" || body == null || body == "") {
+                return {}
+            }
+            return JSON.parse(body);
+        },
+        header: function (resp) {
+            return resp["Header"];
+        },
+        write: function (data, header) {
+            _resp_write(data, header)
         }
-        return JSON.parse(body);
-    },
-    header: function (resp) {
-        return resp["Header"];
     },
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);

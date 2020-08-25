@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/zfd81/parrot/httpclient"
+	"github.com/zfd81/parrot/http"
 
 	"github.com/spf13/cobra"
 	"github.com/zfd81/parrot/meta"
@@ -53,19 +53,23 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 		param.Value = v
 	}
 
-	client := httpclient.New()
+	client := http.New()
 	url := fmt.Sprintf("http://%s/parrot/api/test", globalFlags.Endpoints[0])
 	resp, err := client.Post(url, "application/json;charset=UTF-8", serv, nil)
 	if err != nil {
 		fmt.Println(err)
+	} else {
+		data := map[string]interface{}{}
+		err = json.Unmarshal([]byte(resp.Content), &data)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+			fmt.Println(data["log"])
+			fmt.Println("[CONTENT] ", data["content"])
+		}
 	}
 
-	data := map[string]string{}
-	err = json.Unmarshal([]byte(resp.Content), &data)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(data["log"])
 }
 
 func readParameterInteractive(name string) string {

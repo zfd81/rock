@@ -1,4 +1,4 @@
-package httpclient
+package http
 
 import (
 	"bytes"
@@ -13,12 +13,6 @@ import (
 	"github.com/spf13/cast"
 	"github.com/zfd81/rooster/util"
 )
-
-type Response struct {
-	StatusCode int
-	Header     map[string]string
-	Content    string
-}
 
 type HttpClient struct {
 	client  *http.Client

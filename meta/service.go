@@ -2,6 +2,7 @@ package meta
 
 type Parameter struct {
 	Name         string `yaml:"name"`
+	Comment      string
 	DataType     string `yaml:"dataType"`
 	Value        interface{}
 	DefaultValue interface{}

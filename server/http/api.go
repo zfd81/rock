@@ -1,11 +1,14 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/zfd81/parrot/server/env"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zfd81/parrot/meta"
-	"github.com/zfd81/parrot/script"
 	"github.com/zfd81/rooster/types/container"
 )
 
@@ -20,23 +23,24 @@ func Test(c *gin.Context) {
 	err := c.ShouldBind(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"msg": err.Error(),
+			"log": err.Error(),
 		})
 		return
 	}
-	se := script.New()
+
+	ins := env.New(serv)
 	for _, param := range serv.Params {
-		se.AddVar(param.Name, param.Value)
+		ins.SetParam(param.Name, param.Value)
 	}
-	se.AddScript(serv.Script)
-	log, err := se.Run()
+
+	log, err := ins.Run()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"msg": err.Error(),
-		})
-		return
+		log = log + fmt.Sprintf(env.LogFormat, time.Now().Format("2006-01-02 15:04:05.000")) + err.Error()
 	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"log": log,
+		"log":     log,
+		"status":  ins.GetRespStatus(),
+		"content": ins.GetRespContent(),
 	})
 }
