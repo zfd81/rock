@@ -1,0 +1,8 @@
+name: Parrot
+version1: 1.0.0
+etcd:
+  endpoints:
+    - 127.0.0.1:2379
+  dialTimeout: 5
+  requestTimeout: 5
+  rootDirectory: parrot

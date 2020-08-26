@@ -1,5 +1,7 @@
 package meta
 
+import "strings"
+
 type Parameter struct {
 	Name         string `yaml:"name"`
 	Comment      string
@@ -14,4 +16,11 @@ type Service struct {
 	Method string       `yaml:"method"`
 	Params []*Parameter `yaml:"params"`
 	Script string       `yaml:"script"`
+}
+
+func FormatServiceName(name string) string {
+	if strings.HasPrefix(name, "/") {
+		return name[1:]
+	}
+	return name
 }

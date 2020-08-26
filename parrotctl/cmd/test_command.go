@@ -7,8 +7,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/zfd81/parrot/http"
-
 	"github.com/spf13/cobra"
 	"github.com/zfd81/parrot/meta"
 	"gopkg.in/yaml.v2"
@@ -31,6 +29,9 @@ func NewTestCommand() *cobra.Command {
 
 // testCommandFunc executes the "test" command.
 func testCommandFunc(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		ExitWithError(ExitBadArgs, fmt.Errorf("serv add command requires serv file as its argument"))
+	}
 	path := args[0]
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
@@ -53,9 +54,7 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 		param.Value = v
 	}
 
-	client := http.New()
-	url := fmt.Sprintf("http://%s/parrot/api/test", globalFlags.Endpoints[0])
-	resp, err := client.Post(url, "application/json;charset=UTF-8", serv, nil)
+	resp, err := client.Post(url("test"), "application/json;charset=UTF-8", serv, nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {
