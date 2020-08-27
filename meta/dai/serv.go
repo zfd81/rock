@@ -3,8 +3,7 @@ package dai
 import (
 	"encoding/json"
 
-	"github.com/zfd81/parrot/errors"
-
+	"github.com/zfd81/parrot/core"
 	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/parrot/util/etcd"
 )
@@ -20,7 +19,7 @@ func CreateService(serv *meta.Service) error {
 		return err
 	}
 	if v != nil {
-		return errors.ErrServExists
+		return core.ErrServExists
 	}
 	_, err = etcd.Put(servKey(serv.Name), string(data))
 	return err
@@ -42,7 +41,7 @@ func ModifyService(serv *meta.Service) error {
 		return err
 	}
 	if v == nil {
-		return errors.ErrServNotExist
+		return core.ErrServNotExist
 	}
 	_, err = etcd.Put(servKey(serv.Name), string(data))
 	return err

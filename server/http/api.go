@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zfd81/parrot/core"
 	"github.com/zfd81/parrot/meta/dai"
 
 	"github.com/zfd81/parrot/server/env"
@@ -52,49 +53,50 @@ func CreateService(c *gin.Context) {
 	err := c.ShouldBind(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
 	}
 	serv.Name = meta.FormatServiceName(serv.Name)
-	cnt, err := dai.CreateService(serv)
+	err = dai.CreateService(serv)
 
 	if err != nil {
-		if cnt == -1 {
+		if err == core.ErrServExists {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"code": 1234,
+				"code": 101,
 				"msg":  err.Error(),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": 1234,
-		"msg":  "ok",
+		"code": 100,
+		"msg":  fmt.Sprintf("Service %s created successfully", serv.Name),
 	})
 }
 
 func DeleteService(c *gin.Context) {
 	name := c.Param("name")
+	name = meta.FormatServiceName(name)
 	err := dai.DeleteService(name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": 1234,
-		"msg":  "ok",
+		"code": 100,
+		"msg":  fmt.Sprintf("Service %s deleted successfully", name),
 	})
 }
 
@@ -103,24 +105,32 @@ func ModifyService(c *gin.Context) {
 	err := c.ShouldBind(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
 	}
+	serv.Name = meta.FormatServiceName(serv.Name)
 	err = dai.ModifyService(serv)
 
 	if err != nil {
+		if err == core.ErrServNotExist {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 102,
+				"msg":  err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": 1234,
-		"msg":  "ok",
+		"code": 100,
+		"msg":  fmt.Sprintf("Service %s modified successfully", serv.Name),
 	})
 }
 
@@ -129,7 +139,7 @@ func FindService(c *gin.Context) {
 	serv, err := dai.GetService(name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
@@ -145,7 +155,7 @@ func ListService(c *gin.Context) {
 	servs, err := dai.ListService(name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 1234,
+			"code": 999,
 			"msg":  err.Error(),
 		})
 		return
