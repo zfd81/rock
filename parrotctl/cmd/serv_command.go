@@ -116,7 +116,7 @@ func servDeleteCommandFunc(cmd *cobra.Command, args []string) {
 		ExitWithError(ExitBadArgs, fmt.Errorf("serv delete command requires serv name as its argument"))
 	}
 	name := meta.FormatServiceName(args[0])
-	resp, err := client.Delete(url("serv/name/"+name), nil)
+	resp, err := client.Delete(url("serv/name/"+name), nil, nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {

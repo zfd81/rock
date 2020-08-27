@@ -144,3 +144,69 @@ func HttpPost(call otto.FunctionCall) (value otto.Value) {
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
+
+func HttpDelete(call otto.FunctionCall) (value otto.Value) {
+	url := strings.TrimSpace(call.Argument(0).String())
+	var data map[string]interface{}
+	var header map[string]interface{}
+	data_v := call.Argument(1)
+	if data_v.IsObject() {
+		data_v, err := data_v.Export()
+		if err != nil {
+			log.Panicln(err)
+		} else {
+			val, ok := data_v.(map[string]interface{})
+			if ok {
+				data = val
+			}
+		}
+	}
+	header_v := call.Argument(2)
+	if header_v.IsObject() {
+		header_v, err := header_v.Export()
+		if err != nil {
+			log.Panicln(err)
+		} else {
+			val, ok := header_v.(map[string]interface{})
+			if ok {
+				header = val
+			}
+		}
+	}
+	resp := http.Delete(url, data, header)
+	value, _ = call.Otto.ToValue(*resp)
+	return
+}
+
+func HttpPut(call otto.FunctionCall) (value otto.Value) {
+	url := strings.TrimSpace(call.Argument(0).String())
+	var data map[string]interface{}
+	var header map[string]interface{}
+	data_v := call.Argument(1)
+	if data_v.IsObject() {
+		data_v, err := data_v.Export()
+		if err != nil {
+			log.Panicln(err)
+		} else {
+			val, ok := data_v.(map[string]interface{})
+			if ok {
+				data = val
+			}
+		}
+	}
+	header_v := call.Argument(2)
+	if header_v.IsObject() {
+		header_v, err := header_v.Export()
+		if err != nil {
+			log.Panicln(err)
+		} else {
+			val, ok := header_v.(map[string]interface{})
+			if ok {
+				header = val
+			}
+		}
+	}
+	resp := http.Put(url, data, header)
+	value, _ = call.Otto.ToValue(*resp)
+	return
+}

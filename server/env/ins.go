@@ -76,5 +76,7 @@ func New(serv *meta.Service) *Instance {
 	se.AddFunc("_resp_write", script.RespWrite(ins))
 	se.AddFunc("_http_get", script.HttpGet)
 	se.AddFunc("_http_post", script.HttpPost)
+	se.AddFunc("_http_delete", script.HttpDelete)
+	se.AddFunc("_http_put", script.HttpPut)
 	return ins
 }

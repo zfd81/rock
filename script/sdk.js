@@ -53,5 +53,17 @@ var _ = {
         var promise = this.Promise.create();
         promise.response = resp;
         return promise;
+    },
+    delete: function (url, param, header) {
+        var resp = _http_delete(url, param, header);
+        var promise = this.Promise.create();
+        promise.response = resp;
+        return promise;
+    },
+    put: function (url, param, header) {
+        var resp = _http_put(url, param, header);
+        var promise = this.Promise.create();
+        promise.response = resp;
+        return promise;
     }
 };
