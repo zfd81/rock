@@ -78,7 +78,7 @@ func (hc *HttpClient) PostForm(url string, data url.Values, header map[string]in
 	return hc.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()), header)
 }
 
-func (hc *HttpClient) Put(url, contentType string, data interface{}, header map[string]interface{}) (resp *Response, err error) {
+func (hc *HttpClient) Put(url string, data interface{}, header map[string]interface{}) (resp *Response, err error) {
 	jsonStr, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -87,15 +87,20 @@ func (hc *HttpClient) Put(url, contentType string, data interface{}, header map[
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	return hc.do(req, header)
 }
 
-func (hc *HttpClient) Delete(url string, header map[string]interface{}) (resp *Response, err error) {
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+func (hc *HttpClient) Delete(url string, data interface{}, header map[string]interface{}) (resp *Response, err error) {
+	jsonStr, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
+	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	return hc.do(req, header)
 }
 
@@ -176,7 +181,7 @@ func Put(url string, data map[string]interface{}, header map[string]interface{})
 		return response
 	}
 
-	resp, err := client.Put(url, "application/json;charset=UTF-8", data, header)
+	resp, err := client.Put(url, data, header)
 	if err != nil {
 		log.Println(err)
 		return response
@@ -194,7 +199,7 @@ func Delete(url string, data map[string]interface{}, header map[string]interface
 		return response
 	}
 
-	resp, err := client.Delete(url, header)
+	resp, err := client.Delete(url, data, header)
 	if err != nil {
 		log.Println(err)
 		return response
