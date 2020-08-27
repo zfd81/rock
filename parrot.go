@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/zfd81/parrot/conf"
+
 	"github.com/gin-gonic/gin"
 	"github.com/zfd81/parrot/parrotctl/cmd"
 	"github.com/zfd81/parrot/server/http"
@@ -46,5 +48,6 @@ func Execute() {
 }
 
 func main() {
+	fmt.Println(conf.GetConfig().Banner)
 	Execute()
 }

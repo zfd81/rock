@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Name    string `mapstructure:"name"`
 	Version string `mapstructure:"version"`
+	Banner  string `mapstructure:"banner"`
 	Meta    Meta   `mapstructure:"meta"`
 	Etcd    Etcd   `mapstructure:"etcd"`
 }
@@ -31,11 +32,31 @@ const (
 	ConfigName = "parrot-site"
 	ConfigPath = "."
 	ConfigType = "yaml"
+
+	banner1 = `
+	 ____   __    ____  ____  _____  ____ 
+	(  _ \ /__\  (  _ \(  _ \(  _  )(_  _)
+	 )___//(__)\  )   / )   / )(_)(   )(  
+	(__) (__)(__)(_)\_)(_)\_)(_____) (__) 
+
+	`
+
+	banner2 = `
+
+	########     ###    ########  ########   #######  ######## 
+	##     ##   ## ##   ##     ## ##     ## ##     ##    ##    
+	##     ##  ##   ##  ##     ## ##     ## ##     ##    ##    
+	########  ##     ## ########  ########  ##     ##    ##    
+	##        ######### ##   ##   ##   ##   ##     ##    ##    
+	##        ##     ## ##    ##  ##    ##  ##     ##    ##    
+	##        ##     ## ##     ## ##     ##  #######     ## 
+	`
 )
 
 var defaultConf = Config{
 	Name:    "Parrot",
 	Version: "1.0.0",
+	Banner:  banner1,
 	Meta: Meta{
 		PathSeparator:    "/",
 		NameSeparator:    ".",
