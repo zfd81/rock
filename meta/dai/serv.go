@@ -2,38 +2,47 @@ package dai
 
 import (
 	"encoding/json"
-	"errors"
+
+	"github.com/zfd81/parrot/errors"
 
 	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/parrot/util/etcd"
 )
 
-func CreateService(serv *meta.Service) (int, error) {
+func CreateService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
-	if err != nil {
-		return 0, err
-	}
-	key := servKey(serv.Name)
-	v, err := etcd.Get(key)
-	if v != nil {
-		return -1, errors.New("The service already exists")
-	}
-	_, err = etcd.Put(servKey(serv.Name), string(data))
-	return 1, err
-}
-
-func DeleteService(name string) error {
-	_, err := etcd.Del(servKey(name))
 	if err != nil {
 		return err
 	}
-	return nil
+	key := servKey(serv.Name)
+	v, err := etcd.Get(key)
+	if err != nil {
+		return err
+	}
+	if v != nil {
+		return errors.ErrServExists
+	}
+	_, err = etcd.Put(servKey(serv.Name), string(data))
+	return err
+}
+
+func DeleteService(name string) (err error) {
+	_, err = etcd.Del(servKey(name))
+	return
 }
 
 func ModifyService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
 	if err != nil {
 		return err
+	}
+	key := servKey(serv.Name)
+	v, err := etcd.Get(key)
+	if err != nil {
+		return err
+	}
+	if v == nil {
+		return errors.ErrServNotExist
 	}
 	_, err = etcd.Put(servKey(serv.Name), string(data))
 	return err
