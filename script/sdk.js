@@ -5,13 +5,13 @@ var _ = {
                 response: {},
                 then: function (func) {
                     if (_.resp.status(this.response) == 200) {
-                        func(_.resp.content(this.response), _.resp.header(this.response));
+                        func(_.resp.data(this.response), _.resp.header(this.response));
                     }
                     return this
                 },
                 catch: function (func) {
                     if (_.resp.status(this.response) != 200) {
-                        func(_.resp.status(this.response), _.resp.content(this.response), _.resp.header(this.response));
+                        func(_.resp.status(this.response), _.resp.data(this.response), _.resp.header(this.response));
                     }
                 }
             }
@@ -25,11 +25,11 @@ var _ = {
         status: function (resp) {
             return resp["StatusCode"];
         },
-        body: function (resp) {
+        content: function (resp) {
             return resp["Content"];
         },
-        content: function (resp) {
-            var body = this.body(resp)
+        data: function (resp) {
+            var body = this.content(resp)
             if (typeof body == "undefined" || body == null || body == "") {
                 return {}
             }
@@ -40,7 +40,7 @@ var _ = {
         },
         write: function (data, header) {
             _resp_write(data, header)
-        }
+        },
     },
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);
