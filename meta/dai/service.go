@@ -2,18 +2,29 @@ package dai
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/zfd81/parrot/core"
 	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/parrot/util/etcd"
 )
 
+/**
+* 服务的key是: /parrot/serv/服务路径.请求方法
+**/
+
+func servKey(method string, path string) string {
+	return config.Meta.RootDirectory +
+		config.Meta.ServiceDirectory +
+		path + "." + strings.ToLower(method)
+}
+
 func CreateService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
 	if err != nil {
 		return err
 	}
-	key := servKey(serv.Name)
+	key := servKey(serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -21,12 +32,12 @@ func CreateService(serv *meta.Service) error {
 	if v != nil {
 		return core.ErrServExists
 	}
-	_, err = etcd.Put(servKey(serv.Name), string(data))
+	_, err = etcd.Put(key, string(data))
 	return err
 }
 
-func DeleteService(name string) (err error) {
-	_, err = etcd.Del(servKey(name))
+func DeleteService(method string, path string) (err error) {
+	_, err = etcd.Del(servKey(method, path))
 	return
 }
 
@@ -35,7 +46,7 @@ func ModifyService(serv *meta.Service) error {
 	if err != nil {
 		return err
 	}
-	key := servKey(serv.Name)
+	key := servKey(serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -43,12 +54,12 @@ func ModifyService(serv *meta.Service) error {
 	if v == nil {
 		return core.ErrServNotExist
 	}
-	_, err = etcd.Put(servKey(serv.Name), string(data))
+	_, err = etcd.Put(key, string(data))
 	return err
 }
 
-func GetService(name string) (*meta.Service, error) {
-	v, err := etcd.Get(servKey(name))
+func GetService(method string, path string) (*meta.Service, error) {
+	v, err := etcd.Get(servKey(method, path))
 	if err != nil {
 		return nil, err
 	}
@@ -63,11 +74,10 @@ func GetService(name string) (*meta.Service, error) {
 	return serv, nil
 }
 
-func ListService(name string) ([]*meta.Service, error) {
-	path := config.Meta.RootDirectory +
+func ListService(path string) ([]*meta.Service, error) {
+	path = config.Meta.RootDirectory +
 		config.Meta.ServiceDirectory +
-		config.Meta.PathSeparator +
-		name
+		path
 	servs := make([]*meta.Service, 0, 50)
 	kvs, err := etcd.GetWithPrefix(path)
 	if err == nil {
@@ -75,18 +85,10 @@ func ListService(name string) ([]*meta.Service, error) {
 			serv := &meta.Service{}
 			err = json.Unmarshal(kv.Value, serv)
 			if err != nil {
-				return servs, err
+				break
 			}
 			servs = append(servs, serv)
 		}
 	}
 	return servs, err
-}
-
-func servKey(name string) string {
-	return config.Meta.RootDirectory +
-		config.Meta.ServiceDirectory +
-		config.Meta.PathSeparator +
-		name +
-		config.Meta.ServiceSuffix
 }
