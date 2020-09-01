@@ -1,11 +1,14 @@
 package http
 
-import "github.com/spf13/cast"
+import (
+	"github.com/spf13/cast"
+)
 
 type Response struct {
 	StatusCode int
 	Header     map[string]string
 	Content    string
+	Data       interface{}
 }
 
 func (r *Response) SetStatusCode(code int) {
@@ -22,4 +25,17 @@ func (r *Response) SetHeader(header map[string]string) {
 
 func (r *Response) SetContent(json string) {
 	r.Content = json
+}
+
+func (r *Response) SetData(data interface{}) {
+	r.Data = data
+}
+
+func NewResponse() *Response {
+	return &Response{
+		StatusCode: 0,
+		Header:     map[string]string{},
+		Content:    "",
+		Data:       nil,
+	}
 }
