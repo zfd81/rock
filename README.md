@@ -426,7 +426,7 @@ axios.interceptors.request.use(function (config) {
     // Do something before request is sent
     return config;
   }, function (error) {
-    // Do something with request error
+    // Do something with request core
     return Promise.reject(error);
   });
 
@@ -437,7 +437,7 @@ axios.interceptors.response.use(function (response) {
     return response;
   }, function (error) {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
-    // Do something with response error
+    // Do something with response core
     return Promise.reject(error);
   });
 ```
@@ -469,7 +469,7 @@ axios.get('/user/12345')
       console.log(error.response.headers);
     } else if (error.request) {
       // The request was made but no response was received
-      // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+      // `core.request` is an instance of XMLHttpRequest in the browser and an instance of
       // http.ClientRequest in node.js
       console.log(error.request);
     } else {
@@ -517,7 +517,7 @@ axios.get('/user/12345', {
   if (axios.isCancel(thrown)) {
     console.log('Request canceled', thrown.message);
   } else {
-    // handle error
+    // handle core
   }
 });
 

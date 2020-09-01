@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/zfd81/parrot/core"
@@ -17,7 +18,10 @@ import (
 
 func param(c *gin.Context) container.Map {
 	p := container.JsonMap{}
-	c.ShouldBind(&p)
+	err := c.ShouldBind(&p)
+	if err != nil {
+		return nil
+	}
 	return p
 }
 
@@ -58,7 +62,8 @@ func CreateService(c *gin.Context) {
 		})
 		return
 	}
-	serv.Name = meta.FormatServiceName(serv.Name)
+
+	serv.Path = meta.FormatPath(serv.Path)
 	err = dai.CreateService(serv)
 
 	if err != nil {
@@ -76,16 +81,32 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
+	res := env.NewResource(serv)
+	env.AddResource(res)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,
-		"msg":  fmt.Sprintf("Service %s created successfully", serv.Name),
+		"msg":  fmt.Sprintf("Service %s created successfully", serv.Path),
 	})
 }
 
 func DeleteService(c *gin.Context) {
-	name := c.Param("name")
-	name = meta.FormatServiceName(name)
-	err := dai.DeleteService(name)
+	method := c.Param("method")
+	m := strings.ToUpper(method)
+	if m != http.MethodGet &&
+		m != http.MethodPost &&
+		m != http.MethodPut &&
+		m != http.MethodDelete {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "Method " + method + " not found",
+		})
+		return
+	}
+
+	path := c.Param("path")
+	path = meta.FormatPath(path)
+	err := dai.DeleteService(m, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -94,9 +115,11 @@ func DeleteService(c *gin.Context) {
 		return
 	}
 
+	env.RemoveResource(m, path)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,
-		"msg":  fmt.Sprintf("Service %s deleted successfully", name),
+		"msg":  fmt.Sprintf("Service %s deleted successfully", path),
 	})
 }
 
@@ -110,7 +133,7 @@ func ModifyService(c *gin.Context) {
 		})
 		return
 	}
-	serv.Name = meta.FormatServiceName(serv.Name)
+	serv.Path = meta.FormatPath(serv.Path)
 	err = dai.ModifyService(serv)
 
 	if err != nil {
@@ -130,13 +153,27 @@ func ModifyService(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,
-		"msg":  fmt.Sprintf("Service %s modified successfully", serv.Name),
+		"msg":  fmt.Sprintf("Service %s modified successfully", serv.Path),
 	})
 }
 
 func FindService(c *gin.Context) {
-	name := c.Param("name")
-	serv, err := dai.GetService(name)
+	method := c.Param("method")
+	m := strings.ToUpper(method)
+	if m != http.MethodGet &&
+		m != http.MethodPost &&
+		m != http.MethodPut &&
+		m != http.MethodDelete {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "Method " + method + " not found",
+		})
+		return
+	}
+
+	path := c.Param("path")
+	path = meta.FormatPath(path)
+	serv, err := dai.GetService(m, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -148,11 +185,10 @@ func FindService(c *gin.Context) {
 }
 
 func ListService(c *gin.Context) {
-	name := c.Param("name")
-	if name == "*" {
-		name = ""
-	}
-	servs, err := dai.ListService(name)
+	path := c.Param("path")
+	path = meta.FormatPath(path)
+
+	servs, err := dai.ListService(path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -161,10 +197,10 @@ func ListService(c *gin.Context) {
 		return
 	}
 
-	names := make([]string, 0, 50)
+	paths := make([]string, 0, 50)
 	for _, serv := range servs {
-		names = append(names, serv.Name)
+		paths = append(paths, serv.Path)
 	}
 
-	c.JSON(http.StatusOK, names)
+	c.JSON(http.StatusOK, paths)
 }

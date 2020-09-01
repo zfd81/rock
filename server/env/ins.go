@@ -53,6 +53,10 @@ func (i *Instance) SetRespContent(json string) {
 	i.resp.SetContent(json)
 }
 
+func (i *Instance) SetRespData(data interface{}) {
+	i.resp.SetData(data)
+}
+
 func (i *Instance) GetRespContent() string {
 	return i.resp.Content
 }

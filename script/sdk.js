@@ -40,7 +40,7 @@ var _ = {
         },
         write: function (data, header) {
             _resp_write(data, header)
-        },
+        }
     },
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);

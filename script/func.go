@@ -1,7 +1,6 @@
 package script
 
 import (
-	"encoding/json"
 	"log"
 	"strings"
 
@@ -51,14 +50,7 @@ func RespWrite(env Environment) func(call otto.FunctionCall) otto.Value {
 			}
 		}
 
-		if data != nil {
-			jsonStr, err := json.Marshal(data)
-			if err != nil {
-				log.Panicln(err)
-				env.Println(err)
-			}
-			env.SetRespContent(string(jsonStr))
-		}
+		env.SetRespData(data)
 
 		header_v := call.Argument(1)
 		if header_v.IsObject() {

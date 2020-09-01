@@ -30,7 +30,7 @@ func NewServCommand() *cobra.Command {
 
 func newServAddCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "add <serv file>",
+		Use:   "add <file or directory>",
 		Short: "Adds a new serv",
 		Run:   servAddCommandFunc,
 	}
@@ -39,7 +39,7 @@ func newServAddCommand() *cobra.Command {
 
 func newServDeleteCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "delete <serv name>",
+		Use:   "delete <service method> <service path>",
 		Short: "Deletes a serv",
 		Run:   servDeleteCommandFunc,
 	}
@@ -56,7 +56,7 @@ func newServChangeCommand() *cobra.Command {
 
 func newServGetCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "get <serv name> [options]",
+		Use:   "get <service method> <service path>",
 		Short: "Gets detailed information of a serv",
 		Run:   servGetCommandFunc,
 	}
@@ -111,11 +111,12 @@ func servAddCommandFunc(cmd *cobra.Command, args []string) {
 
 // servDeleteCommandFunc executes the "serv delete" command.
 func servDeleteCommandFunc(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		ExitWithError(ExitBadArgs, fmt.Errorf("serv delete command requires serv name as its argument"))
+	if len(args) != 2 {
+		ExitWithError(ExitBadArgs, fmt.Errorf("serv delete command requires service method and service path as its argument"))
 	}
-	name := meta.FormatServiceName(args[0])
-	resp, err := client.Delete(url("serv/name/"+name), nil, nil)
+	method := args[0]
+	path := meta.FormatPath(args[1])
+	resp, err := client.Delete(url("serv/method/"+method+path), nil, nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -132,11 +133,12 @@ func servDeleteCommandFunc(cmd *cobra.Command, args []string) {
 
 // servGetCommandFunc executes the "serv get" command.
 func servGetCommandFunc(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		ExitWithError(ExitBadArgs, fmt.Errorf("serv get command requires serv name as its argument"))
+	if len(args) != 2 {
+		ExitWithError(ExitBadArgs, fmt.Errorf("serv get command requires service method and service path as its argument"))
 	}
-	name := meta.FormatServiceName(args[0])
-	resp, err := client.Get(url("serv/name/"+name), nil)
+	method := args[0]
+	path := meta.FormatPath(args[1])
+	resp, err := client.Get(url("serv/method/"+method+path), nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -146,7 +148,7 @@ func servGetCommandFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println(resp.Content)
 		} else {
-			fmt.Println(fmt.Sprintf("[INFO] Service %s details:", name))
+			fmt.Println(fmt.Sprintf("[INFO] Service %s details:", path))
 			fmt.Println(out.String())
 		}
 	}
@@ -154,11 +156,9 @@ func servGetCommandFunc(cmd *cobra.Command, args []string) {
 
 // servListCommandFunc executes the "serv list" command.
 func servListCommandFunc(cmd *cobra.Command, args []string) {
-	path := "serv/list/"
-	if len(args) == 0 {
-		path = path + "*"
-	} else {
-		path = path + meta.FormatServiceName(args[0])
+	path := "serv/list"
+	if len(args) > 0 {
+		path = path + meta.FormatPath(args[0])
 	}
 	resp, err := client.Get(url(path), nil)
 	if err != nil {

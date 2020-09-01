@@ -24,10 +24,13 @@ type Resource interface {
 	GetMethod() string
 	GetPath() string
 	GetRegexPath() string
-	GetResourcePath() string
-	SetResourcePath(resourcePath string)
 	GetLevel() int
-	Run() (string, error)
+	GetPathParams() []*meta.Parameter
+	AddPathParam(param *meta.Parameter)
+	GetRequestParams() []*meta.Parameter
+	AddRequestParam(param *meta.Parameter)
+	Run() (log string, resp *http.Response, err error)
+	Clear()
 }
 
 type ParrotResource struct {
@@ -35,12 +38,11 @@ type ParrotResource struct {
 	method        string              // 资源请求方法
 	path          string              // 资源原始路径
 	regexPath     string              // 正则表达式形式路径
-	resourcePath  string              // 资源路径
 	level         int                 // 资源级别
-	PathParams    []*meta.Parameter   // 路径参数
-	RequestParams []*meta.Parameter   //请求参数
+	pathParams    []*meta.Parameter   // 路径参数
+	requestParams []*meta.Parameter   // 请求参数
 	log           *bytes.Buffer
-	resp          http.Response
+	resp          *http.Response
 }
 
 func (r *ParrotResource) GetMethod() string {
@@ -55,16 +57,24 @@ func (r *ParrotResource) GetRegexPath() string {
 	return r.regexPath
 }
 
-func (r *ParrotResource) GetResourcePath() string {
-	return r.resourcePath
-}
-
-func (r *ParrotResource) SetResourcePath(resourcePath string) {
-	r.resourcePath = resourcePath
-}
-
 func (r *ParrotResource) GetLevel() int {
 	return r.level
+}
+
+func (r *ParrotResource) GetPathParams() []*meta.Parameter {
+	return r.pathParams
+}
+
+func (r *ParrotResource) AddPathParam(param *meta.Parameter) {
+	r.pathParams = append(r.pathParams, param)
+}
+
+func (r *ParrotResource) GetRequestParams() []*meta.Parameter {
+	return r.requestParams
+}
+
+func (r *ParrotResource) AddRequestParam(param *meta.Parameter) {
+	r.requestParams = append(r.requestParams, param)
 }
 
 func (r *ParrotResource) Println(args ...interface{}) error {
@@ -84,15 +94,27 @@ func (r *ParrotResource) AddRespHeader(name string, value interface{}) {
 	r.resp.AddHeader(name, value)
 }
 
-func (r *ParrotResource) SetRespContent(json string) {
-	r.resp.SetContent(json)
+func (r *ParrotResource) SetRespData(data interface{}) {
+	r.resp.SetData(data)
 }
 
-func (r *ParrotResource) Run() (string, error) {
+func (r *ParrotResource) Run() (string, *http.Response, error) {
+	for _, p := range r.pathParams {
+		r.se.AddVar(p.Name, p.Value)
+	}
+	for _, p := range r.requestParams {
+		r.se.AddVar(p.Name, p.Value)
+	}
 	err := r.se.Run()
-	log := r.log.String()
+	if err != nil {
+		r.log.WriteString(err.Error())
+	}
+	return r.log.String(), r.resp, err
+}
+
+func (r *ParrotResource) Clear() {
 	r.log.Reset()
-	return log, err
+	r.resp.Clear()
 }
 
 func NewResource(serv *meta.Service) Resource {
@@ -104,15 +126,16 @@ func NewResource(serv *meta.Service) Resource {
 		path = path[0 : len(path)-1]
 	}
 	res := &ParrotResource{
-		path:       path,
-		PathParams: []*meta.Parameter{},
+		path:          path,
+		pathParams:    []*meta.Parameter{},
+		requestParams: []*meta.Parameter{},
 	}
 	regexPath, err := util.ReplaceBetween(path, "{", "}", func(i int, s int, e int, c string) (string, error) {
 		param := &meta.Parameter{
 			Name:     c,
 			DataType: "string",
 		}
-		res.PathParams = append(res.PathParams, param)
+		res.AddPathParam(param)
 		return Regex, nil
 	})
 	if err != nil {
@@ -130,15 +153,21 @@ func NewResource(serv *meta.Service) Resource {
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath
 	pathFragments := strings.Split(regexPath, "/")
+	res.level = len(pathFragments) - 1
 	index := 0
 	for i, fragment := range pathFragments {
 		if Regex == fragment {
-			res.PathParams[index].Index = i
+			res.pathParams[index].Index = i
 			index++
 		}
 	}
-	res.level = len(pathFragments) - 1
+	for _, p := range serv.Params {
+		param := *p
+		res.AddRequestParam(&param)
+	}
 	res.log = new(bytes.Buffer)
-	res.resp = http.Response{}
+	res.resp = &http.Response{
+		Header: map[string]string{},
+	}
 	return res
 }

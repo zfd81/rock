@@ -1,6 +1,11 @@
 package env
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+
+	"github.com/zfd81/parrot/meta"
+)
 
 var (
 	getResources    = make(map[int][]Resource) // GET资源映射
@@ -27,16 +32,44 @@ func DeleteResources() map[int][]Resource {
 
 func AddResource(resource Resource) {
 	level := resource.GetLevel()
-	resourceMap := GetResources()
-	if resource.GetMethod() == http.MethodPost {
-		resourceMap = PostResources()
+	var resourceMap map[int][]Resource
+	if resource.GetMethod() == http.MethodGet {
+		resourceMap = getResources
+	} else if resource.GetMethod() == http.MethodPost {
+		resourceMap = postResources
 	} else if resource.GetMethod() == http.MethodPut {
-		resourceMap = PutResources()
+		resourceMap = putResources
 	} else if resource.GetMethod() == http.MethodDelete {
-		resourceMap = DeleteResources()
+		resourceMap = deleteResources
 	}
 	if resourceMap[level] == nil {
 		resourceMap[level] = []Resource{}
 	}
 	resourceMap[level] = append(resourceMap[level], resource)
+}
+
+func RemoveResource(method string, path string) {
+	if path != "" || strings.TrimSpace(path) != "" {
+		path = meta.FormatPath(path)
+		level := len(strings.Split(path, "/")) - 1
+		var resourceMap map[int][]Resource
+		if strings.ToUpper(method) == http.MethodGet {
+			resourceMap = getResources
+		} else if strings.ToUpper(method) == http.MethodPost {
+			resourceMap = postResources
+		} else if strings.ToUpper(method) == http.MethodPut {
+			resourceMap = putResources
+		} else if strings.ToUpper(method) == http.MethodDelete {
+			resourceMap = deleteResources
+		}
+		resources := resourceMap[level]
+		if resources != nil && len(resources) > 0 {
+			for i, v := range resources {
+				if path == v.GetPath() {
+					resourceMap[level] = append(resources[:i], resources[i+1:]...)
+					break
+				}
+			}
+		}
+	}
 }

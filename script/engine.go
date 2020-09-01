@@ -27,7 +27,7 @@ type Environment interface {
 	Println(args ...interface{}) error
 	SetRespStatus(code int)
 	AddRespHeader(name string, value interface{})
-	SetRespContent(json string)
+	SetRespData(data interface{})
 }
 
 func init() {

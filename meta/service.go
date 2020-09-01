@@ -1,12 +1,20 @@
 package meta
 
-import "strings"
+import (
+	"strings"
+)
 
 type ParamType int
 
 const (
 	PathParam = iota
 	RequestParam
+
+	DataTypeString  = "STRING"
+	DataTypeInteger = "INT"
+	DataTypeBool    = "BOOL"
+	DataTypeMap     = "MAP"
+	DataTypeArray   = "ARR"
 )
 
 type Parameter struct {
@@ -19,16 +27,19 @@ type Parameter struct {
 	Type         ParamType   `json:"-"` //参数类型
 }
 type Service struct {
-	Name   string       `yaml:"name"`
+	//Name   string       `yaml:"name"`
 	Path   string       `yaml:"path"`
 	Method string       `yaml:"method"`
 	Params []*Parameter `yaml:"params"`
 	Script string       `yaml:"script"`
 }
 
-func FormatServiceName(name string) string {
-	if strings.HasPrefix(name, "/") {
-		return name[1:]
+func FormatPath(path string) string {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
 	}
-	return name
+	if strings.HasSuffix(path, "/") {
+		path = path[0 : len(path)-1]
+	}
+	return path
 }

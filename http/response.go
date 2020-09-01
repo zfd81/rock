@@ -31,6 +31,13 @@ func (r *Response) SetData(data interface{}) {
 	r.Data = data
 }
 
+func (r *Response) Clear() {
+	r.StatusCode = 0
+	r.Header = map[string]string{}
+	r.Content = ""
+	r.Data = nil
+}
+
 func NewResponse() *Response {
 	return &Response{
 		StatusCode: 0,

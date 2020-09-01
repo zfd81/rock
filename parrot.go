@@ -33,10 +33,17 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	{
 		api.POST("/test", http.Test)
 		api.POST("/serv", http.CreateService)
-		api.DELETE("/serv/name/:name", http.DeleteService)
+		api.DELETE("/serv/method/:method/*path", http.DeleteService)
 		api.PUT("/serv", http.ModifyService)
-		api.GET("/serv/name/:name", http.FindService)
-		api.GET("/serv/list/:name", http.ListService)
+		api.GET("/serv/method/:method/*path", http.FindService)
+		api.GET("/serv/list/*path", http.ListService)
+	}
+	serv := parrot.Group("/serv")
+	{
+		serv.GET("/*path", http.CallGetService)
+		serv.POST("/*path", http.CallPostService)
+		serv.PUT("/*path", http.CallPutService)
+		serv.DELETE("/*path", http.CallDeleteService)
 	}
 	r.Run(fmt.Sprintf(":%d", port))
 }

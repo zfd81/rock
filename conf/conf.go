@@ -17,7 +17,6 @@ type Config struct {
 type Meta struct {
 	PathSeparator    string `mapstructure:"pathSeparator"` // 路径分隔符（分隔路径元素）
 	NameSeparator    string `mapstructure:"nameSeparator"` // 名字分隔符（分隔对象全名）
-	ServiceSuffix    string `mapstructure:"serviceSuffix"`
 	RootDirectory    string `mapstructure:"rootDirectory"`
 	ServiceDirectory string `mapstructure:"rootDirectory"`
 }
@@ -60,7 +59,6 @@ var defaultConf = Config{
 	Meta: Meta{
 		PathSeparator:    "/",
 		NameSeparator:    ".",
-		ServiceSuffix:    ".serv",
 		RootDirectory:    "/parrot",
 		ServiceDirectory: "/serv",
 	},
