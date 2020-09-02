@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/zfd81/parrot/conf"
-	"go.etcd.io/etcd/clientv3"
 )
 
 type OperType int

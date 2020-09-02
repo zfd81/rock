@@ -13,9 +13,8 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.6.3
-	github.com/zfd81/das v0.0.0-20200706115652-c689e3d8f40f // indirect
 	github.com/zfd81/rooster v0.0.0-20200509130230-5f2b9d86cd8a
-	go.etcd.io/etcd v3.3.25+incompatible
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	sigs.k8s.io/yaml v1.2.0 // indirect

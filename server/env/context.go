@@ -1,8 +1,15 @@
 package env
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strings"
+
+	"github.com/zfd81/parrot/conf"
+
+	"github.com/zfd81/parrot/util/etcd"
 
 	"github.com/zfd81/parrot/meta"
 )
@@ -72,4 +79,30 @@ func RemoveResource(method string, path string) {
 			}
 		}
 	}
+}
+
+func LoadMeta() error {
+	kvs, err := etcd.GetWithPrefix(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
+	cnt := 0
+	if err == nil {
+		for _, kv := range kvs {
+			serv := &meta.Service{}
+			err = json.Unmarshal(kv.Value, serv)
+			if err != nil {
+				log.Fatal(err)
+			}
+			res := NewResource(serv)
+			AddResource(res)
+			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), servPath(string(kv.Key)))
+			cnt++
+		}
+		fmt.Printf("[INFO] A total of %d services were initialized \n", cnt)
+	}
+	return err
+}
+
+func servPath(path string) string {
+	start := len(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
+	end := strings.LastIndex(path, conf.GetConfig().Meta.NameSeparator)
+	return path[start:end]
 }

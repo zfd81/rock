@@ -1,4 +1,4 @@
-package http
+package server
 
 import (
 	"fmt"
@@ -203,4 +203,19 @@ func ListService(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, paths)
+}
+
+func ApiRouter() http.Handler {
+	e := gin.New()
+	e.Use(gin.Logger(), gin.Recovery())
+	api := e.Group("/parrot")
+	{
+		api.POST("/test", Test)
+		api.POST("/serv", CreateService)
+		api.DELETE("/serv/method/:method/*path", DeleteService)
+		api.PUT("/serv", ModifyService)
+		api.GET("/serv/method/:method/*path", FindService)
+		api.GET("/serv/list/*path", ListService)
+	}
+	return e
 }

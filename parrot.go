@@ -2,17 +2,25 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"time"
 
-	"github.com/zfd81/parrot/conf"
+	"github.com/zfd81/parrot/server/env"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zfd81/parrot/parrotctl/cmd"
-	"github.com/zfd81/parrot/server/http"
+
+	"github.com/zfd81/parrot/cluster"
+	"github.com/zfd81/parrot/conf"
+	"github.com/zfd81/parrot/server"
 
 	"github.com/spf13/cobra"
+	"github.com/zfd81/parrot/parrotctl/cmd"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
+	g       errgroup.Group
 	rootCmd = &cobra.Command{
 		Use:        "parrot",
 		Short:      "parrot server",
@@ -23,29 +31,43 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 8143, "Port to run the http http server")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 8081, "Port to run the http http server")
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
-	r := gin.Default()
-	parrot := r.Group("/parrot")
-	api := parrot.Group("/api")
-	{
-		api.POST("/test", http.Test)
-		api.POST("/serv", http.CreateService)
-		api.DELETE("/serv/method/:method/*path", http.DeleteService)
-		api.PUT("/serv", http.ModifyService)
-		api.GET("/serv/method/:method/*path", http.FindService)
-		api.GET("/serv/list/*path", http.ListService)
+	conf.GetConfig().Port = port
+	ApiServer := &http.Server{
+		Addr:         fmt.Sprintf(":%d", conf.GetConfig().APIServer.Port),
+		Handler:      server.ApiRouter(),
+		ReadTimeout:  conf.GetConfig().APIServer.ReadTimeout * time.Second,
+		WriteTimeout: conf.GetConfig().APIServer.WriteTimeout * time.Second,
 	}
-	serv := parrot.Group("/serv")
-	{
-		serv.GET("/*path", http.CallGetService)
-		serv.POST("/*path", http.CallPostService)
-		serv.PUT("/*path", http.CallPutService)
-		serv.DELETE("/*path", http.CallDeleteService)
+	ParrotServer := &http.Server{
+		Addr:         fmt.Sprintf(":%d", conf.GetConfig().Port),
+		Handler:      server.ParrotRouter(),
+		ReadTimeout:  conf.GetConfig().ReadTimeout * time.Second,
+		WriteTimeout: conf.GetConfig().WriteTimeout * time.Second,
 	}
-	r.Run(fmt.Sprintf(":%d", port))
+	g.Go(func() error {
+		err := ApiServer.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
+	})
+	g.Go(func() error {
+		err := ParrotServer.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
+	})
+
+	env.LoadMeta()                      //加载元数据
+	cluster.Register(time.Now().Unix()) //集群注册
+	if err := g.Wait(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func Execute() {
@@ -55,6 +77,7 @@ func Execute() {
 }
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	fmt.Println(conf.GetConfig().Banner)
 	Execute()
 }

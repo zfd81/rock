@@ -2,29 +2,48 @@ package conf
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Name    string `mapstructure:"name"`
-	Version string `mapstructure:"version"`
-	Banner  string `mapstructure:"banner"`
-	Meta    Meta   `mapstructure:"meta"`
-	Etcd    Etcd   `mapstructure:"etcd"`
+	Name         string        `mapstructure:"name"`
+	Version      string        `mapstructure:"version"`
+	Banner       string        `mapstructure:"banner"`
+	Port         int           `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
+	WriteTimeout time.Duration `mapstructure:"write-timeout"`
+	APIServer    APIServer     `mapstructure:"api-server"`
+	Meta         Meta          `mapstructure:"meta"`
+	Etcd         Etcd          `mapstructure:"etcd"`
+	Cluster      Cluster       `mapstructure:"cluster"`
+}
+
+type APIServer struct {
+	Port         int           `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
+	WriteTimeout time.Duration `mapstructure:"write-timeout"`
 }
 
 type Meta struct {
-	PathSeparator    string `mapstructure:"pathSeparator"` // 路径分隔符（分隔路径元素）
-	NameSeparator    string `mapstructure:"nameSeparator"` // 名字分隔符（分隔对象全名）
-	RootDirectory    string `mapstructure:"rootDirectory"`
-	ServiceDirectory string `mapstructure:"rootDirectory"`
+	PathSeparator string `mapstructure:"path-separator"` // 路径分隔符（分隔路径元素）
+	NameSeparator string `mapstructure:"name-separator"` // 名字分隔符（分隔对象全名）
+	Path          string `mapstructure:"path"`
+	ServicePath   string `mapstructure:"service-path"`
 }
 
 type Etcd struct {
 	Endpoints      []string `mapstructure:"endpoints"`
-	DialTimeout    int      `mapstructure:"dialTimeout"`
-	RequestTimeout int      `mapstructure:"requestTimeout"`
+	DialTimeout    int      `mapstructure:"dial-timeout"`
+	RequestTimeout int      `mapstructure:"request-timeout"`
+}
+
+type Cluster struct {
+	LeaderPath               string `mapstructure:"leader-path"`
+	MemberPath               string `mapstructure:"member-path"`
+	HeartbeatInterval        int    `mapstructure:"heartbeat-interval"`
+	HeartbeatRecheckInterval int    `mapstructure:"heartbeat-recheck-interval"`
 }
 
 const (
@@ -53,19 +72,32 @@ const (
 )
 
 var defaultConf = Config{
-	Name:    "Parrot",
-	Version: "1.0.0",
-	Banner:  banner1,
+	Name:         "Parrot",
+	Version:      "1.0.0",
+	Banner:       banner1,
+	ReadTimeout:  10,
+	WriteTimeout: 15,
+	APIServer: APIServer{
+		Port:         8143,
+		ReadTimeout:  5,
+		WriteTimeout: 10,
+	},
 	Meta: Meta{
-		PathSeparator:    "/",
-		NameSeparator:    ".",
-		RootDirectory:    "/parrot",
-		ServiceDirectory: "/serv",
+		PathSeparator: "/",
+		NameSeparator: ".",
+		Path:          "/parrot/meta",
+		ServicePath:   "/serv",
 	},
 	Etcd: Etcd{
 		Endpoints:      []string{"127.0.0.1:2379"},
 		DialTimeout:    5,
 		RequestTimeout: 5,
+	},
+	Cluster: Cluster{
+		LeaderPath:               "/parrot/cluster",
+		MemberPath:               "/parrot/cluster/members",
+		HeartbeatInterval:        9,
+		HeartbeatRecheckInterval: 5,
 	},
 }
 

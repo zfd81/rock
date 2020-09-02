@@ -14,9 +14,9 @@ import (
 **/
 
 func servKey(method string, path string) string {
-	return config.Meta.RootDirectory +
-		config.Meta.ServiceDirectory +
-		path + "." + strings.ToLower(method)
+	return config.Meta.Path +
+		config.Meta.ServicePath +
+		path + config.Meta.NameSeparator + strings.ToLower(method)
 }
 
 func CreateService(serv *meta.Service) error {
@@ -75,8 +75,8 @@ func GetService(method string, path string) (*meta.Service, error) {
 }
 
 func ListService(path string) ([]*meta.Service, error) {
-	path = config.Meta.RootDirectory +
-		config.Meta.ServiceDirectory +
+	path = config.Meta.Path +
+		config.Meta.ServicePath +
 		path
 	servs := make([]*meta.Service, 0, 50)
 	kvs, err := etcd.GetWithPrefix(path)

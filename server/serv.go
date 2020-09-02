@@ -1,4 +1,4 @@
-package http
+package server
 
 import (
 	"log"
@@ -217,4 +217,17 @@ func wrapParam(c *gin.Context, resource env.Resource) error {
 		}
 	}
 	return nil
+}
+
+func ParrotRouter() http.Handler {
+	e := gin.New()
+	e.Use(gin.Logger(), gin.Recovery())
+	parrot := e.Group("/")
+	{
+		parrot.GET("/*path", CallGetService)
+		parrot.POST("/*path", CallPostService)
+		parrot.PUT("/*path", CallPutService)
+		parrot.DELETE("/*path", CallDeleteService)
+	}
+	return e
 }
