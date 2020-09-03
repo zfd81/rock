@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/zfd81/parrot/conf"
+
 	"github.com/zfd81/parrot/core"
 
 	"github.com/spf13/cast"
@@ -222,7 +224,7 @@ func wrapParam(c *gin.Context, resource env.Resource) error {
 func ParrotRouter() http.Handler {
 	e := gin.New()
 	e.Use(gin.Logger(), gin.Recovery())
-	parrot := e.Group("/")
+	parrot := e.Group(conf.GetConfig().ServiceName)
 	{
 		parrot.GET("/*path", CallGetService)
 		parrot.POST("/*path", CallPostService)

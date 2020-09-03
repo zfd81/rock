@@ -15,6 +15,6 @@ var (
 func url(path string) string {
 	return "http://" +
 		globalFlags.Endpoints[0] +
-		"/parrot/api/" +
+		"/parrot/" +
 		path
 }

@@ -81,7 +81,7 @@ func RemoveResource(method string, path string) {
 	}
 }
 
-func LoadMeta() error {
+func InitResources() error {
 	kvs, err := etcd.GetWithPrefix(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
 	cnt := 0
 	if err == nil {
@@ -93,7 +93,8 @@ func LoadMeta() error {
 			}
 			res := NewResource(serv)
 			AddResource(res)
-			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), servPath(string(kv.Key)))
+			path, _ := servPath(string(kv.Key))
+			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
 			cnt++
 		}
 		fmt.Printf("[INFO] A total of %d services were initialized \n", cnt)
@@ -101,8 +102,61 @@ func LoadMeta() error {
 	return err
 }
 
-func servPath(path string) string {
+func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
+	full_path := metaPath(string(key))
+	if operType == etcd.CREATE {
+		switch {
+		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
+			serv := &meta.Service{}
+			err := json.Unmarshal(value, serv)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			res := NewResource(serv)
+			AddResource(res)
+			path, _ := servPath(string(key))
+			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
+			break
+		}
+	} else if operType == etcd.MODIFY {
+		switch {
+		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
+			serv := &meta.Service{}
+			err := json.Unmarshal(value, serv)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			res := NewResource(serv)
+			RemoveResource(serv.Method, serv.Path)
+			AddResource(res)
+			path, _ := servPath(string(key))
+			fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
+			break
+		}
+	} else if operType == etcd.DELETE {
+		switch {
+		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
+			path, method := servPath(string(key))
+			RemoveResource(method, path)
+			fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.ToUpper(method), path)
+			break
+		}
+	}
+}
+
+func WatchMeta() {
+	etcd.WatchWithPrefix(conf.GetConfig().Meta.Path, metaWatcher)
+}
+
+func servPath(path string) (string, string) {
 	start := len(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
 	end := strings.LastIndex(path, conf.GetConfig().Meta.NameSeparator)
-	return path[start:end]
+	return path[start:end], path[end+1:]
+}
+
+func metaPath(path string) string {
+	start := len(conf.GetConfig().Meta.Path)
+	return path[start:]
 }

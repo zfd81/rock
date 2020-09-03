@@ -27,15 +27,18 @@ var (
 		SuggestFor: []string{"parrot"},
 		Run:        startCommandFunc,
 	}
-	port int
+	port    int
+	apiPort int
 )
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 8081, "Port to run the http http server")
+	rootCmd.Flags().IntVar(&port, "port", conf.GetConfig().Port, "Port to run the server")
+	rootCmd.Flags().IntVar(&apiPort, "api-port", conf.GetConfig().APIServer.Port, "Port to run the api server")
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
 	conf.GetConfig().Port = port
+	conf.GetConfig().APIServer.Port = apiPort
 	ApiServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", conf.GetConfig().APIServer.Port),
 		Handler:      server.ApiRouter(),
@@ -63,8 +66,9 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 		return err
 	})
 
-	env.LoadMeta()                      //加载元数据
-	cluster.Register(time.Now().Unix()) //集群注册
+	env.WatchMeta()                     // 监测元数据变化
+	env.InitResources()                 // 根据元数据初始化资源
+	cluster.Register(time.Now().Unix()) // 集群注册
 	if err := g.Wait(); err != nil {
 		log.Fatal(err)
 	}

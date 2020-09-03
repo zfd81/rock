@@ -76,9 +76,11 @@ func Register(startUpTime int64) error {
 	}
 	elect := concurrency.NewElection(session, mpath)
 	go func() {
+		//竞选 Leader，直到成为 Leader 函数才返回
 		if err := elect.Campaign(context.Background(), string(data)); err != nil {
 			fmt.Println(err)
 		} else {
+			node.LeaderFlag = true
 			if _, err = etcd.PutWithLease(path, node.Id, session.Lease()); err != nil {
 				fmt.Println(err)
 			}

@@ -81,9 +81,6 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	res := env.NewResource(serv)
-	env.AddResource(res)
-
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,
 		"msg":  fmt.Sprintf("Service %s created successfully", serv.Path),
@@ -114,8 +111,6 @@ func DeleteService(c *gin.Context) {
 		})
 		return
 	}
-
-	env.RemoveResource(m, path)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,

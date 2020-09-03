@@ -12,6 +12,7 @@ type Config struct {
 	Version      string        `mapstructure:"version"`
 	Banner       string        `mapstructure:"banner"`
 	Port         int           `mapstructure:"port"`
+	ServiceName  string        `mapstructure:"service-name"`
 	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
 	WriteTimeout time.Duration `mapstructure:"write-timeout"`
 	APIServer    APIServer     `mapstructure:"api-server"`
@@ -75,6 +76,8 @@ var defaultConf = Config{
 	Name:         "Parrot",
 	Version:      "1.0.0",
 	Banner:       banner1,
+	Port:         8081,
+	ServiceName:  "/",
 	ReadTimeout:  10,
 	WriteTimeout: 15,
 	APIServer: APIServer{
