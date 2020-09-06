@@ -13,6 +13,7 @@ type Config struct {
 	Banner       string        `mapstructure:"banner"`
 	Port         int           `mapstructure:"port"`
 	ServiceName  string        `mapstructure:"service-name"`
+	Directory    string        `mapstructure:"directory"`
 	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
 	WriteTimeout time.Duration `mapstructure:"write-timeout"`
 	APIServer    APIServer     `mapstructure:"api-server"`
@@ -30,8 +31,6 @@ type APIServer struct {
 type Meta struct {
 	PathSeparator string `mapstructure:"path-separator"` // 路径分隔符（分隔路径元素）
 	NameSeparator string `mapstructure:"name-separator"` // 名字分隔符（分隔对象全名）
-	Path          string `mapstructure:"path"`
-	ServicePath   string `mapstructure:"service-path"`
 }
 
 type Etcd struct {
@@ -41,10 +40,8 @@ type Etcd struct {
 }
 
 type Cluster struct {
-	LeaderPath               string `mapstructure:"leader-path"`
-	MemberPath               string `mapstructure:"member-path"`
-	HeartbeatInterval        int    `mapstructure:"heartbeat-interval"`
-	HeartbeatRecheckInterval int    `mapstructure:"heartbeat-recheck-interval"`
+	HeartbeatInterval        int `mapstructure:"heartbeat-interval"`
+	HeartbeatRecheckInterval int `mapstructure:"heartbeat-recheck-interval"`
 }
 
 const (
@@ -78,6 +75,7 @@ var defaultConf = Config{
 	Banner:       banner1,
 	Port:         8081,
 	ServiceName:  "/",
+	Directory:    "/parrot",
 	ReadTimeout:  10,
 	WriteTimeout: 15,
 	APIServer: APIServer{
@@ -88,8 +86,6 @@ var defaultConf = Config{
 	Meta: Meta{
 		PathSeparator: "/",
 		NameSeparator: ".",
-		Path:          "/parrot/meta",
-		ServicePath:   "/serv",
 	},
 	Etcd: Etcd{
 		Endpoints:      []string{"127.0.0.1:2379"},
@@ -97,8 +93,6 @@ var defaultConf = Config{
 		RequestTimeout: 5,
 	},
 	Cluster: Cluster{
-		LeaderPath:               "/parrot/cluster",
-		MemberPath:               "/parrot/cluster/members",
 		HeartbeatInterval:        9,
 		HeartbeatRecheckInterval: 5,
 	},

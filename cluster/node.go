@@ -5,9 +5,12 @@ type Node struct {
 	Address     string `json:"addr"`
 	Port        int    `json:"port"`
 	StartUpTime int64  `json:"start-up-time"`
-	LeaderFlag  bool   `json:"leader-flag"`
+	LeaderFlag  bool   `json:"-"`
 }
 
 func NewNode(id string) *Node {
-	return &Node{Id: id}
+	return &Node{
+		Id:         id,
+		LeaderFlag: false,
+	}
 }

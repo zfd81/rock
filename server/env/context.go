@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zfd81/parrot/conf"
-
 	"github.com/zfd81/parrot/util/etcd"
 
 	"github.com/zfd81/parrot/meta"
@@ -82,7 +80,7 @@ func RemoveResource(method string, path string) {
 }
 
 func InitResources() error {
-	kvs, err := etcd.GetWithPrefix(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
+	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath())
 	cnt := 0
 	if err == nil {
 		for _, kv := range kvs {
@@ -93,7 +91,7 @@ func InitResources() error {
 			}
 			res := NewResource(serv)
 			AddResource(res)
-			path, _ := servPath(string(kv.Key))
+			path, _ := meta.ServicePath(string(kv.Key))
 			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
 			cnt++
 		}
@@ -103,10 +101,10 @@ func InitResources() error {
 }
 
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
-	full_path := metaPath(string(key))
+	full_path := meta.MetaPath(string(key))
 	if operType == etcd.CREATE {
 		switch {
-		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
+		case strings.HasPrefix(full_path, meta.ServiceDirectory):
 			serv := &meta.Service{}
 			err := json.Unmarshal(value, serv)
 			if err != nil {
@@ -115,13 +113,13 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			}
 			res := NewResource(serv)
 			AddResource(res)
-			path, _ := servPath(string(key))
+			path, _ := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
 			break
 		}
 	} else if operType == etcd.MODIFY {
 		switch {
-		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
+		case strings.HasPrefix(full_path, meta.ServiceDirectory):
 			serv := &meta.Service{}
 			err := json.Unmarshal(value, serv)
 			if err != nil {
@@ -131,14 +129,14 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			res := NewResource(serv)
 			RemoveResource(serv.Method, serv.Path)
 			AddResource(res)
-			path, _ := servPath(string(key))
+			path, _ := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
 			break
 		}
 	} else if operType == etcd.DELETE {
 		switch {
-		case strings.HasPrefix(full_path, conf.GetConfig().Meta.ServicePath):
-			path, method := servPath(string(key))
+		case strings.HasPrefix(full_path, meta.ServiceDirectory):
+			path, method := meta.ServicePath(string(key))
 			RemoveResource(method, path)
 			fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.ToUpper(method), path)
 			break
@@ -147,16 +145,5 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 }
 
 func WatchMeta() {
-	etcd.WatchWithPrefix(conf.GetConfig().Meta.Path, metaWatcher)
-}
-
-func servPath(path string) (string, string) {
-	start := len(conf.GetConfig().Meta.Path + conf.GetConfig().Meta.ServicePath)
-	end := strings.LastIndex(path, conf.GetConfig().Meta.NameSeparator)
-	return path[start:end], path[end+1:]
-}
-
-func metaPath(path string) string {
-	start := len(conf.GetConfig().Meta.Path)
-	return path[start:]
+	etcd.WatchWithPrefix(meta.GetMetaRootPath(), metaWatcher)
 }

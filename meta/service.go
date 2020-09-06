@@ -1,9 +1,5 @@
 package meta
 
-import (
-	"strings"
-)
-
 type ParamType int
 
 const (
@@ -26,20 +22,11 @@ type Parameter struct {
 	Index        int         `json:"-"` // 参数索引
 	Type         ParamType   `json:"-"` //参数类型
 }
+
 type Service struct {
 	//Name   string       `yaml:"name"`
 	Path   string       `yaml:"path"`
 	Method string       `yaml:"method"`
 	Params []*Parameter `yaml:"params"`
 	Script string       `yaml:"script"`
-}
-
-func FormatPath(path string) string {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-	if strings.HasSuffix(path, "/") {
-		path = path[0 : len(path)-1]
-	}
-	return path
 }

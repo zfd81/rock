@@ -13,6 +13,12 @@ import (
 	"github.com/zfd81/parrot/util/etcd"
 )
 
+const (
+	ClusterDirectory = "/cluster"
+	LeaderDirectory  = "/leader"
+	MemberDirectory  = "/members"
+)
+
 var (
 	leaseID  clientv3.LeaseID
 	node     *Node
@@ -20,6 +26,18 @@ var (
 	members  = make(map[string]*Node)
 	config   = conf.GetConfig()
 )
+
+func GetClusterPath() string {
+	return config.Directory + ClusterDirectory
+}
+
+func GetLeaderPath() string {
+	return GetClusterPath() + LeaderDirectory
+}
+
+func GetMemberPath() string {
+	return GetClusterPath() + MemberDirectory
+}
 
 func GetNode() *Node {
 	return node
@@ -44,14 +62,14 @@ func Register(startUpTime int64) error {
 	node.Port = config.Port
 	node.StartUpTime = startUpTime
 
-	//获得集群根目录
-	path := config.Cluster.LeaderPath
+	//获得集群领导者目录
+	lpath := GetLeaderPath()
 
 	//获得集群成员结点目录
-	mpath := config.Cluster.MemberPath
+	mpath := GetMemberPath()
 
 	//监听集群leader结点变化
-	etcd.Watch(path, func(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
+	etcd.Watch(lpath, func(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
 		leaderId = string(value)
 	})
 
@@ -81,7 +99,7 @@ func Register(startUpTime int64) error {
 			fmt.Println(err)
 		} else {
 			node.LeaderFlag = true
-			if _, err = etcd.PutWithLease(path, node.Id, session.Lease()); err != nil {
+			if _, err = etcd.PutWithLease(lpath, node.Id, session.Lease()); err != nil {
 				fmt.Println(err)
 			}
 		}

@@ -2,7 +2,6 @@ package dai
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/zfd81/parrot/core"
 	"github.com/zfd81/parrot/meta"
@@ -13,18 +12,12 @@ import (
 * 服务的key是: /parrot/serv/服务路径.请求方法
 **/
 
-func servKey(method string, path string) string {
-	return config.Meta.Path +
-		config.Meta.ServicePath +
-		path + config.Meta.NameSeparator + strings.ToLower(method)
-}
-
 func CreateService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
 	if err != nil {
 		return err
 	}
-	key := servKey(serv.Method, serv.Path)
+	key := meta.ServiceKey(serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -37,7 +30,7 @@ func CreateService(serv *meta.Service) error {
 }
 
 func DeleteService(method string, path string) (err error) {
-	_, err = etcd.Del(servKey(method, path))
+	_, err = etcd.Del(meta.ServiceKey(method, path))
 	return
 }
 
@@ -46,7 +39,7 @@ func ModifyService(serv *meta.Service) error {
 	if err != nil {
 		return err
 	}
-	key := servKey(serv.Method, serv.Path)
+	key := meta.ServiceKey(serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -59,7 +52,7 @@ func ModifyService(serv *meta.Service) error {
 }
 
 func GetService(method string, path string) (*meta.Service, error) {
-	v, err := etcd.Get(servKey(method, path))
+	v, err := etcd.Get(meta.ServiceKey(method, path))
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +68,7 @@ func GetService(method string, path string) (*meta.Service, error) {
 }
 
 func ListService(path string) ([]*meta.Service, error) {
-	path = config.Meta.Path +
-		config.Meta.ServicePath +
-		path
+	path = meta.GetServiceRootPath() + path
 	servs := make([]*meta.Service, 0, 50)
 	kvs, err := etcd.GetWithPrefix(path)
 	if err == nil {
