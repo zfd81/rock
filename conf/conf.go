@@ -13,6 +13,7 @@ type Config struct {
 	Banner       string        `mapstructure:"banner"`
 	Port         int           `mapstructure:"port"`
 	ServiceName  string        `mapstructure:"service-name"`
+	Namespaces   []string      `mapstructure:"namespaces"`
 	Directory    string        `mapstructure:"directory"`
 	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
 	WriteTimeout time.Duration `mapstructure:"write-timeout"`

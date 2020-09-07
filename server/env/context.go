@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zfd81/parrot/conf"
+
 	"github.com/zfd81/parrot/util/etcd"
 
 	"github.com/zfd81/parrot/meta"
@@ -17,6 +19,8 @@ var (
 	postResources   = make(map[int][]Resource) // POST资源映射
 	putResources    = make(map[int][]Resource) // PUT资源映射
 	deleteResources = make(map[int][]Resource) // DELETE资源映射
+
+	config = conf.GetConfig()
 )
 
 func GetResources() map[int][]Resource {
@@ -80,7 +84,11 @@ func RemoveResource(method string, path string) {
 }
 
 func InitResources() error {
-	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath())
+	namespace := meta.DefaultNamespace
+	if len(config.Namespaces) > 0 {
+		namespace = config.Namespaces[0]
+	}
+	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath() + meta.FormatPath(namespace))
 	cnt := 0
 	if err == nil {
 		for _, kv := range kvs {
@@ -91,7 +99,7 @@ func InitResources() error {
 			}
 			res := NewResource(serv)
 			AddResource(res)
-			path, _ := meta.ServicePath(string(kv.Key))
+			_, _, path := meta.ServicePath(string(kv.Key))
 			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
 			cnt++
 		}
@@ -113,7 +121,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			}
 			res := NewResource(serv)
 			AddResource(res)
-			path, _ := meta.ServicePath(string(key))
+			_, _, path := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
 			break
 		}
@@ -129,14 +137,14 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			res := NewResource(serv)
 			RemoveResource(serv.Method, serv.Path)
 			AddResource(res)
-			path, _ := meta.ServicePath(string(key))
+			_, _, path := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
 			break
 		}
 	} else if operType == etcd.DELETE {
 		switch {
 		case strings.HasPrefix(full_path, meta.ServiceDirectory):
-			path, method := meta.ServicePath(string(key))
+			_, method, path := meta.ServicePath(string(key))
 			RemoveResource(method, path)
 			fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.ToUpper(method), path)
 			break

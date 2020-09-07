@@ -24,9 +24,9 @@ type Parameter struct {
 }
 
 type Service struct {
-	//Name   string       `yaml:"name"`
-	Path   string       `yaml:"path"`
-	Method string       `yaml:"method"`
-	Params []*Parameter `yaml:"params"`
-	Script string       `yaml:"script"`
+	Namespace string       `yaml:"namespace"` //命名空间 注:不能包含"/"
+	Path      string       `yaml:"path"`      //服务请求路径
+	Method    string       `yaml:"method"`    //服务请求方法（GET,POST,PUT,DELETE）
+	Params    []*Parameter `yaml:"params"`
+	Script    string       `yaml:"script"`
 }

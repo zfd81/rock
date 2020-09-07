@@ -17,7 +17,7 @@ func CreateService(serv *meta.Service) error {
 	if err != nil {
 		return err
 	}
-	key := meta.ServiceKey(serv.Method, serv.Path)
+	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -29,8 +29,8 @@ func CreateService(serv *meta.Service) error {
 	return err
 }
 
-func DeleteService(method string, path string) (err error) {
-	_, err = etcd.Del(meta.ServiceKey(method, path))
+func DeleteService(serv *meta.Service) (err error) {
+	_, err = etcd.Del(meta.ServiceKey(serv.Namespace, serv.Method, serv.Path))
 	return
 }
 
@@ -39,7 +39,7 @@ func ModifyService(serv *meta.Service) error {
 	if err != nil {
 		return err
 	}
-	key := meta.ServiceKey(serv.Method, serv.Path)
+	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return err
@@ -51,8 +51,8 @@ func ModifyService(serv *meta.Service) error {
 	return err
 }
 
-func GetService(method string, path string) (*meta.Service, error) {
-	v, err := etcd.Get(meta.ServiceKey(method, path))
+func GetService(namespace string, method string, path string) (*meta.Service, error) {
+	v, err := etcd.Get(meta.ServiceKey(namespace, method, path))
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,54 @@ func GetService(method string, path string) (*meta.Service, error) {
 	return serv, nil
 }
 
-func ListService(path string) ([]*meta.Service, error) {
-	path = meta.GetServiceRootPath() + path
+func ListService(namespace string, path string) ([]*meta.Service, error) {
 	servs := make([]*meta.Service, 0, 50)
-	kvs, err := etcd.GetWithPrefix(path)
+
+	//查询GET服务
+	key := meta.ServiceKey(namespace, "get", path)
+	kvs, err := etcd.GetWithPrefix(key)
+	if err == nil {
+		for _, kv := range kvs {
+			serv := &meta.Service{}
+			err = json.Unmarshal(kv.Value, serv)
+			if err != nil {
+				break
+			}
+			servs = append(servs, serv)
+		}
+	}
+
+	//查询POST服务
+	key = meta.ServiceKey(namespace, "post", path)
+	kvs, err = etcd.GetWithPrefix(key)
+	if err == nil {
+		for _, kv := range kvs {
+			serv := &meta.Service{}
+			err = json.Unmarshal(kv.Value, serv)
+			if err != nil {
+				break
+			}
+			servs = append(servs, serv)
+		}
+	}
+
+	//查询PUT服务
+	key = meta.ServiceKey(namespace, "put", path)
+	kvs, err = etcd.GetWithPrefix(key)
+	if err == nil {
+		for _, kv := range kvs {
+			serv := &meta.Service{}
+			err = json.Unmarshal(kv.Value, serv)
+			if err != nil {
+				break
+			}
+			servs = append(servs, serv)
+		}
+	}
+
+	//查询DELETE服务
+	key = meta.ServiceKey(namespace, "delete", path)
+	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
 			serv := &meta.Service{}

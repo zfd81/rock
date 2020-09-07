@@ -7,8 +7,13 @@ import (
 )
 
 const (
-	MetaDirectory    = "/meta"
-	ServiceDirectory = "/serv"
+	PathSeparator = "/"
+	NameSeparator = "."
+
+	DefaultNamespace    = "/__"
+	MetaDirectory       = "/meta"
+	ServiceDirectory    = "/_serv"
+	DataSourceDirectory = "/_ds"
 )
 
 var (
@@ -19,31 +24,67 @@ func GetMetaRootPath() string {
 	return config.Directory + MetaDirectory
 }
 
-func GetServiceRootPath() string {
-	return GetMetaRootPath() + ServiceDirectory
-}
-
-func ServiceKey(method string, path string) string {
-	return GetServiceRootPath() + path + config.Meta.NameSeparator + strings.ToLower(method)
-}
-
-func ServicePath(key string) (string, string) {
-	start := len(GetServiceRootPath())
-	end := strings.LastIndex(key, conf.GetConfig().Meta.NameSeparator)
-	return key[start:end], key[end+1:]
-}
-
+//在元数据下的路径
 func MetaPath(path string) string {
 	start := len(GetMetaRootPath())
 	return path[start:]
 }
 
-func FormatPath(path string) string {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+func GetServiceRootPath() string {
+	return GetMetaRootPath() + ServiceDirectory
+}
+
+func ServiceKey(namespace string, method string, path string) string {
+	if namespace == "" {
+		namespace = DefaultNamespace
 	}
-	if strings.HasSuffix(path, "/") {
-		path = path[0 : len(path)-1]
+	return GetServiceRootPath() + FormatPath(namespace) + PathSeparator + strings.ToLower(method) + FormatPath(path)
+}
+
+func ServicePath(key string) (namespace string, method string, path string) {
+	strLen := len(key) //字符串长度
+	cnt := 0
+	position := 0
+	for i := 0; i < strLen; i++ {
+		char := key[i]
+		if char == '/' {
+			if ServiceDirectory == key[position:i] {
+				cnt++
+			} else if cnt == 1 {
+				namespace = key[position:i]
+				cnt++
+			} else if cnt == 2 {
+				method = key[position+1 : i]
+				cnt++
+			} else if cnt == 3 {
+				break
+			}
+			position = i
+		}
+	}
+	path = key[position:]
+	return
+}
+
+func GetDataSourceRootPath() string {
+	return GetMetaRootPath() + DataSourceDirectory
+}
+
+func DataSourceKey(namespace string, name string) string {
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+	return GetDataSourceRootPath() + FormatPath(namespace) + FormatPath(name)
+}
+
+func FormatPath(path string) string {
+	if path != "/" {
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+		if strings.HasSuffix(path, "/") {
+			path = path[0 : len(path)-1]
+		}
 	}
 	return path
 }
