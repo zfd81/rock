@@ -88,6 +88,7 @@ func CreateService(c *gin.Context) {
 }
 
 func DeleteService(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
 	method := c.Param("method")
 	m := strings.ToUpper(method)
 	if m != http.MethodGet &&
@@ -100,10 +101,13 @@ func DeleteService(c *gin.Context) {
 		})
 		return
 	}
-
 	path := c.Param("path")
-	path = meta.FormatPath(path)
-	err := dai.DeleteService(m, path)
+	serv := &meta.Service{
+		Namespace: namespace,
+		Method:    method,
+		Path:      path,
+	}
+	err := dai.DeleteService(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -111,10 +115,9 @@ func DeleteService(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code": 100,
-		"msg":  fmt.Sprintf("Service %s deleted successfully", path),
+		"msg":  fmt.Sprintf("Service %s deleted successfully", serv.Path),
 	})
 }
 
@@ -153,6 +156,7 @@ func ModifyService(c *gin.Context) {
 }
 
 func FindService(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
 	method := c.Param("method")
 	m := strings.ToUpper(method)
 	if m != http.MethodGet &&
@@ -165,10 +169,8 @@ func FindService(c *gin.Context) {
 		})
 		return
 	}
-
 	path := c.Param("path")
-	path = meta.FormatPath(path)
-	serv, err := dai.GetService(m, path)
+	serv, err := dai.GetService(namespace, m, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -180,10 +182,9 @@ func FindService(c *gin.Context) {
 }
 
 func ListService(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
 	path := c.Param("path")
-	path = meta.FormatPath(path)
-
-	servs, err := dai.ListService(path)
+	servs, err := dai.ListService(namespace, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
@@ -194,10 +195,148 @@ func ListService(c *gin.Context) {
 
 	paths := make([]string, 0, 50)
 	for _, serv := range servs {
-		paths = append(paths, serv.Path)
+		paths = append(paths, strings.ToUpper(serv.Method)+":"+serv.Path)
 	}
 
 	c.JSON(http.StatusOK, paths)
+}
+
+func CreateDataSource(c *gin.Context) {
+	ds := &meta.DataSource{}
+	err := c.ShouldBind(ds)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	if ds.Name == "" ||
+		ds.Driver == "" ||
+		ds.Host == "" ||
+		ds.Port < 100 ||
+		ds.User == "" ||
+		ds.Password == "" ||
+		ds.Database == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "DataSource information cannot be empty",
+		})
+		return
+	}
+	err = dai.CreateDataSource(ds)
+
+	if err != nil {
+		if err == core.ErrDsExists {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 101,
+				"msg":  err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 100,
+		"msg":  fmt.Sprintf("DataSource %s created successfully", ds.Name),
+	})
+}
+
+func DeleteDataSource(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
+	name := c.Param("name")
+	err := dai.DeleteDataSource(namespace, name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 100,
+		"msg":  fmt.Sprintf("DataSource %s deleted successfully", name),
+	})
+}
+
+func ModifyDataSource(c *gin.Context) {
+	ds := &meta.DataSource{}
+	err := c.ShouldBind(ds)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+	if ds.Name == "" ||
+		ds.Driver == "" ||
+		ds.Host == "" ||
+		ds.Port < 100 ||
+		ds.User == "" ||
+		ds.Password == "" ||
+		ds.Database == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "DataSource information cannot be empty",
+		})
+		return
+	}
+	err = dai.ModifyDataSource(ds)
+
+	if err != nil {
+		if err == core.ErrDsNotExist {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code": 102,
+				"msg":  err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 100,
+		"msg":  fmt.Sprintf("DataSource %s modified successfully", ds.Name),
+	})
+}
+
+func FindDataSource(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
+	name := c.Param("name")
+	ds, err := dai.GetDataSource(namespace, name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, ds)
+}
+
+func ListDataSource(c *gin.Context) {
+	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
+	dses, err := dai.ListDataSource(namespace, "/")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 999,
+			"msg":  err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, dses)
 }
 
 func ApiRouter() http.Handler {
@@ -211,6 +350,12 @@ func ApiRouter() http.Handler {
 		api.PUT("/serv", ModifyService)
 		api.GET("/serv/method/:method/*path", FindService)
 		api.GET("/serv/list/*path", ListService)
+
+		api.POST("/ds", CreateDataSource)
+		api.DELETE("/ds/name/:name", DeleteDataSource)
+		api.PUT("/ds", ModifyDataSource)
+		api.GET("/ds/name/:name", FindDataSource)
+		api.GET("/ds/list", ListDataSource)
 	}
 	return e
 }

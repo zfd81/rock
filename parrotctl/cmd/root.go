@@ -35,6 +35,7 @@ func init() {
 		NewVersionCommand(),
 		NewTestCommand(),
 		NewServCommand(),
+		NewDataSourceCommand(),
 	)
 }
 
