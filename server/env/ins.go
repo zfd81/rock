@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/zfd81/parrot/script/functions"
+
 	"github.com/zfd81/parrot/script"
 
 	"github.com/zfd81/parrot/meta"
@@ -68,6 +70,10 @@ func (i *Instance) Run() (string, error) {
 	return log, err
 }
 
+func (r *Instance) GetNamespace() string {
+	return ""
+}
+
 func New(serv *meta.Service) *Instance {
 	se := script.New()
 	ins := &Instance{
@@ -76,11 +82,11 @@ func New(serv *meta.Service) *Instance {
 		resp: http.Response{},
 	}
 	se.SetScript(serv.Script)
-	se.AddFunc("_sys_log", script.SysLog(ins))
-	se.AddFunc("_resp_write", script.RespWrite(ins))
-	se.AddFunc("_http_get", script.HttpGet)
-	se.AddFunc("_http_post", script.HttpPost)
-	se.AddFunc("_http_delete", script.HttpDelete)
-	se.AddFunc("_http_put", script.HttpPut)
+	se.AddFunc("_sys_log", functions.SysLog(ins))
+	se.AddFunc("_resp_write", functions.RespWrite(ins))
+	se.AddFunc("_http_get", functions.HttpGet)
+	se.AddFunc("_http_post", functions.HttpPost)
+	se.AddFunc("_http_delete", functions.HttpDelete)
+	se.AddFunc("_http_put", functions.HttpPut)
 	return ins
 }

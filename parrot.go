@@ -67,6 +67,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	})
 
 	env.WatchMeta()                     // 监测元数据变化
+	env.InitDbs()                       // 根据元数据初始化数据源
 	env.InitResources()                 // 根据元数据初始化资源
 	cluster.Register(time.Now().Unix()) // 集群注册
 	if err := g.Wait(); err != nil {

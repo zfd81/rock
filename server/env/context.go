@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/zfd81/parrot/conf"
 
@@ -15,72 +18,77 @@ import (
 )
 
 var (
-	getResources    = make(map[int][]Resource) // GET资源映射
-	postResources   = make(map[int][]Resource) // POST资源映射
-	putResources    = make(map[int][]Resource) // PUT资源映射
-	deleteResources = make(map[int][]Resource) // DELETE资源映射
-
 	config = conf.GetConfig()
+
+	resources = map[string]map[int][]Resource{
+		http.MethodGet:    map[int][]Resource{}, // GET资源映射
+		http.MethodPost:   map[int][]Resource{}, // POST资源映射
+		http.MethodPut:    map[int][]Resource{}, // PUT资源映射
+		http.MethodDelete: map[int][]Resource{}, // DELETE资源映射
+	}
+
+	dbs = map[string]*ParrotDB{}
 )
 
-func GetResources() map[int][]Resource {
-	return getResources
-}
-
-func PostResources() map[int][]Resource {
-	return postResources
-}
-
-func PutResources() map[int][]Resource {
-	return putResources
-}
-
-func DeleteResources() map[int][]Resource {
-	return deleteResources
+func GetResourceSet(method string, level int) []Resource {
+	value, found := resources[method][level]
+	if found {
+		return value
+	}
+	return nil
 }
 
 func AddResource(resource Resource) {
+	method := resource.GetMethod()
 	level := resource.GetLevel()
-	var resourceMap map[int][]Resource
-	if resource.GetMethod() == http.MethodGet {
-		resourceMap = getResources
-	} else if resource.GetMethod() == http.MethodPost {
-		resourceMap = postResources
-	} else if resource.GetMethod() == http.MethodPut {
-		resourceMap = putResources
-	} else if resource.GetMethod() == http.MethodDelete {
-		resourceMap = deleteResources
+	rs := GetResourceSet(method, level)
+	if rs == nil {
+		rs = []Resource{}
 	}
-	if resourceMap[level] == nil {
-		resourceMap[level] = []Resource{}
-	}
-	resourceMap[level] = append(resourceMap[level], resource)
+	resources[method][level] = append(rs, resource)
 }
 
 func RemoveResource(method string, path string) {
 	if path != "" || strings.TrimSpace(path) != "" {
 		path = meta.FormatPath(path)
+		method = strings.ToUpper(method)
 		level := len(strings.Split(path, "/")) - 1
-		var resourceMap map[int][]Resource
-		if strings.ToUpper(method) == http.MethodGet {
-			resourceMap = getResources
-		} else if strings.ToUpper(method) == http.MethodPost {
-			resourceMap = postResources
-		} else if strings.ToUpper(method) == http.MethodPut {
-			resourceMap = putResources
-		} else if strings.ToUpper(method) == http.MethodDelete {
-			resourceMap = deleteResources
-		}
-		resources := resourceMap[level]
-		if resources != nil && len(resources) > 0 {
-			for i, v := range resources {
+		rs := GetResourceSet(method, level)
+		if rs != nil && len(rs) > 0 {
+			for i, v := range rs {
 				if path == v.GetPath() {
-					resourceMap[level] = append(resources[:i], resources[i+1:]...)
+					resources[method][level] = append(rs[:i], rs[i+1:]...)
 					break
 				}
 			}
 		}
 	}
+}
+
+func SelectResource(method string, path string) Resource {
+	if strings.HasSuffix(path, "/") {
+		path = path[0 : len(path)-1]
+	}
+	level := len(strings.Split(path, "/")) - 1
+	rs := GetResourceSet(method, level)
+	if rs != nil {
+		for _, resource := range rs {
+			pattern, err := regexp.Compile(resource.GetRegexPath())
+			if err != nil {
+				log.Println(errors.WithStack(err))
+				return nil
+			}
+			if pattern.MatchString(path) {
+				pathFragments := strings.Split(path, "/")
+				for _, param := range resource.GetPathParams() {
+					param.Value = pathFragments[param.Index]
+				}
+				resource.Clear()
+				return resource
+			}
+		}
+	}
+	return nil
 }
 
 func InitResources() error {
@@ -108,6 +116,53 @@ func InitResources() error {
 	return err
 }
 
+func AddDataSource(ds *meta.DataSource) error {
+	db, err := NewDB(ds)
+	if err == nil {
+		dbs[meta.FormatPath(db.Namespace)+meta.FormatPath(db.Name)] = db
+	}
+	return err
+}
+
+func RemoveDataSource(namespace string, name string) *ParrotDB {
+	key := meta.FormatPath(namespace) + meta.FormatPath(name)
+	value, found := dbs[key]
+	if found {
+		delete(dbs, key)
+		return value
+	}
+	return nil
+}
+
+func InitDbs() error {
+	namespace := meta.DefaultNamespace
+	if len(config.Namespaces) > 0 {
+		namespace = config.Namespaces[0]
+	}
+	kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath() + meta.FormatPath(namespace))
+	cnt := 0
+	ecnt := 0
+	if err == nil {
+		for _, kv := range kvs {
+			ds := &meta.DataSource{}
+			err = json.Unmarshal(kv.Value, ds)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = AddDataSource(ds)
+			if err != nil {
+				log.Fatal(err)
+				ecnt++
+			} else {
+				fmt.Printf("[INFO] DataSource %s:%s initialized successfully \n", ds.Namespace, ds.Name)
+				cnt++
+			}
+		}
+		fmt.Printf("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
+	}
+	return err
+}
+
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
 	full_path := meta.MetaPath(string(key))
 	if operType == etcd.CREATE {
@@ -123,6 +178,19 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			AddResource(res)
 			_, _, path := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
+			break
+		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
+			ds := &meta.DataSource{}
+			err := json.Unmarshal(value, ds)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = AddDataSource(ds)
+			if err != nil {
+				fmt.Printf("[ERROR] DataSource %s:%s created failed: %s \n", ds.Namespace, ds.Name, err)
+			} else {
+				fmt.Printf("[INFO] DataSource %s:%s created successfully \n", ds.Namespace, ds.Name)
+			}
 			break
 		}
 	} else if operType == etcd.MODIFY {
@@ -147,6 +215,13 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			_, method, path := meta.ServicePath(string(key))
 			RemoveResource(method, path)
 			fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.ToUpper(method), path)
+			break
+		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
+			namespace, name := meta.DataSourcePath(string(key))
+			db := RemoveDataSource(namespace, name)
+			if db != nil {
+				fmt.Printf("[INFO] Service %s:%s deleted successfully \n", db.Namespace, db.Name)
+			}
 			break
 		}
 	}

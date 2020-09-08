@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zfd81/parrot/script/functions"
+
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/rooster/util"
@@ -34,6 +36,7 @@ type Resource interface {
 }
 
 type ParrotResource struct {
+	namespace     string              //命名空间 注:不能包含"/"
 	se            script.ScriptEngine // 脚本引擎
 	method        string              // 资源请求方法
 	path          string              // 资源原始路径
@@ -75,6 +78,13 @@ func (r *ParrotResource) GetRequestParams() []*meta.Parameter {
 
 func (r *ParrotResource) AddRequestParam(param *meta.Parameter) {
 	r.requestParams = append(r.requestParams, param)
+}
+
+func (r *ParrotResource) GetNamespace() string {
+	if r.namespace == "" {
+		return meta.DefaultNamespace
+	}
+	return r.namespace
 }
 
 func (r *ParrotResource) Println(args ...interface{}) error {
@@ -143,12 +153,12 @@ func NewResource(serv *meta.Service) Resource {
 	}
 	se := script.New()
 	se.SetScript(serv.Script)
-	se.AddFunc("_sys_log", script.SysLog(res))
-	se.AddFunc("_resp_write", script.RespWrite(res))
-	se.AddFunc("_http_get", script.HttpGet)
-	se.AddFunc("_http_post", script.HttpPost)
-	se.AddFunc("_http_delete", script.HttpDelete)
-	se.AddFunc("_http_put", script.HttpPut)
+	se.AddFunc("_sys_log", functions.SysLog(res))
+	se.AddFunc("_resp_write", functions.RespWrite(res))
+	se.AddFunc("_http_get", functions.HttpGet)
+	se.AddFunc("_http_post", functions.HttpPost)
+	se.AddFunc("_http_delete", functions.HttpDelete)
+	se.AddFunc("_http_put", functions.HttpPut)
 	res.se = se
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath

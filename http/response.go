@@ -46,3 +46,8 @@ func NewResponse() *Response {
 		Data:       nil,
 	}
 }
+
+type ErrorResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"msg"`
+}

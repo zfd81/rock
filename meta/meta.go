@@ -77,6 +77,28 @@ func DataSourceKey(namespace string, name string) string {
 	return GetDataSourceRootPath() + FormatPath(namespace) + FormatPath(name)
 }
 
+func DataSourcePath(key string) (namespace string, name string) {
+	strLen := len(key) //字符串长度
+	cnt := 0
+	position := 0
+	for i := 0; i < strLen; i++ {
+		char := key[i]
+		if char == '/' {
+			if DataSourceDirectory == key[position:i] {
+				cnt++
+			} else if cnt == 1 {
+				namespace = key[position:i]
+				cnt++
+			} else if cnt == 2 {
+				break
+			}
+			position = i
+		}
+	}
+	name = key[position:]
+	return
+}
+
 func FormatPath(path string) string {
 	if path != "/" {
 		if !strings.HasPrefix(path, "/") {

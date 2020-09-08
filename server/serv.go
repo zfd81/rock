@@ -1,9 +1,7 @@
 package server
 
 import (
-	"log"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/zfd81/parrot/conf"
@@ -23,7 +21,7 @@ import (
 
 func CallGetService(c *gin.Context) {
 	path := c.Param("path")
-	resource := selectResource(path, env.GetResources())
+	resource := env.SelectResource(http.MethodGet, path)
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
@@ -65,7 +63,7 @@ func CallGetService(c *gin.Context) {
 
 func CallPostService(c *gin.Context) {
 	path := c.Param("path")
-	resource := selectResource(path, env.PostResources())
+	resource := env.SelectResource(http.MethodPost, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -108,7 +106,7 @@ func CallPostService(c *gin.Context) {
 
 func CallPutService(c *gin.Context) {
 	path := c.Param("path")
-	resource := selectResource(path, env.PutResources())
+	resource := env.SelectResource(http.MethodPut, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -139,7 +137,7 @@ func CallPutService(c *gin.Context) {
 
 func CallDeleteService(c *gin.Context) {
 	path := c.Param("path")
-	resource := selectResource(path, env.DeleteResources())
+	resource := env.SelectResource(http.MethodDelete, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -166,32 +164,6 @@ func CallDeleteService(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resource)
-}
-
-func selectResource(path string, resourceMap map[int][]env.Resource) env.Resource {
-	if strings.HasSuffix(path, "/") {
-		path = path[0 : len(path)-1]
-	}
-	level := len(strings.Split(path, "/")) - 1
-	resources := resourceMap[level]
-	if resources != nil {
-		for _, resource := range resources {
-			pattern, err := regexp.Compile(resource.GetRegexPath())
-			if err != nil {
-				log.Println(errors.WithStack(err))
-				return nil
-			}
-			if pattern.MatchString(path) {
-				pathFragments := strings.Split(path, "/")
-				for _, param := range resource.GetPathParams() {
-					param.Value = pathFragments[param.Index]
-				}
-				resource.Clear()
-				return resource
-			}
-		}
-	}
-	return nil
 }
 
 func wrapParam(c *gin.Context, resource env.Resource) error {
