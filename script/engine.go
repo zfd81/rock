@@ -24,6 +24,7 @@ type ScriptEngine interface {
 }
 
 type Environment interface {
+	GetNamespace() string
 	Println(args ...interface{}) error
 	SetRespStatus(code int)
 	AddRespHeader(name string, value interface{})
