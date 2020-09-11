@@ -6,13 +6,11 @@ import (
 
 	"github.com/zfd81/parrot/conf"
 
-	"github.com/zfd81/parrot/core"
+	"github.com/zfd81/parrot/errs"
 
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/parrot/meta"
-
-	"github.com/pkg/errors"
 
 	"github.com/zfd81/parrot/server/env"
 
@@ -32,17 +30,7 @@ func CallGetService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
-		if err == core.ErrParamBad {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-				"msg":  "Service request parameter error",
-			})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
@@ -75,17 +63,7 @@ func CallPostService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
-		if err == core.ErrParamBad {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-				"msg":  "Service request parameter error",
-			})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
@@ -101,7 +79,7 @@ func CallPostService(c *gin.Context) {
 	for k, v := range resp.Header {
 		c.Header(k, v)
 	}
-	c.JSON(http.StatusOK, resp.Content)
+	c.JSON(http.StatusOK, resp.Data)
 }
 
 func CallPutService(c *gin.Context) {
@@ -118,21 +96,23 @@ func CallPutService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
-		if err == core.ErrParamBad {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-				"msg":  "Service request parameter error",
-			})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, resource)
+	log, resp, err := resource.Run()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  log,
+		})
+		return
+	}
+	for k, v := range resp.Header {
+		c.Header(k, v)
+	}
+	c.JSON(http.StatusOK, resp.Data)
 }
 
 func CallDeleteService(c *gin.Context) {
@@ -140,42 +120,44 @@ func CallDeleteService(c *gin.Context) {
 	resource := env.SelectResource(http.MethodDelete, path)
 
 	if resource == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "Target service[" + path + "] not exist.",
-		})
+		c.JSON(http.StatusNotFound, errs.New(404, "Target service["+path+"] not exist."))
 		return
 	}
 
 	err := wrapParam(c, resource)
 	if err != nil {
-		if err == core.ErrParamBad {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-				"msg":  "Service request parameter error",
-			})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, resource)
+	log, resp, err := resource.Run()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  log,
+		})
+		return
+	}
+	for k, v := range resp.Header {
+		c.Header(k, v)
+	}
+	c.JSON(http.StatusOK, resp.Data)
 }
 
 func wrapParam(c *gin.Context, resource env.Resource) error {
 	if len(resource.GetRequestParams()) > 0 {
-		p := param(c)
+		p, err := param(c)
+		if err != nil {
+			return err
+		}
 		if p == nil || p.Empty() {
-			return core.ErrParamBad
+			return errs.New(errs.ErrParamBad)
 		}
 		for _, param := range resource.GetRequestParams() {
 			val, found := p.Get(param.Name)
 			if !found {
-				return errors.New("parameter " + param.Name + " not found")
+				return errs.New(errs.ErrParamNotFound, param.Name)
 			}
 			if strings.ToUpper(param.DataType) == meta.DataTypeString {
 				param.Value = cast.ToString(val)

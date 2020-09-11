@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
+	"strings"
+
+	"github.com/zfd81/rooster/util"
 
 	"github.com/spf13/cobra"
 	"github.com/zfd81/parrot/meta"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -36,39 +37,81 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		prompt := fmt.Sprintf("open %s: No such file", path)
-		log.Println(prompt)
+		fmt.Println("[ERROR]", prompt)
 		return
 	}
-	yamlFile, err := ioutil.ReadFile(path)
+	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("[ERROR]", err)
 	}
-	serv := &meta.Service{}
-	err = yaml.Unmarshal(yamlFile, serv)
+	params := map[string]interface{}{
+		"name":   info.Name(),
+		"source": string(source),
+	}
+	resp, err := client.Post(url("test/analysis"), "application/json;charset=UTF-8", params, nil)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("[ERROR]", err)
+	}
+	if resp.StatusCode != 200 {
+		data := map[string]interface{}{}
+		err = json.Unmarshal([]byte(resp.Content), &data)
+		if err != nil {
+			fmt.Println("[ERROR]", err)
+		} else {
+			fmt.Println("[ERROR] code:", data["code"])
+			fmt.Println("[ERROR] message:", data["msg"], "\n")
+		}
+		return
 	}
 
+	serv := &meta.Service{}
+	err = json.Unmarshal([]byte(resp.Content), &serv)
+	if err != nil {
+		fmt.Println("[ERROR]", err)
+	}
+	ps := map[string]interface{}{}
+	util.ReplaceBetween(serv.Path, "{", "}", func(i int, s int, e int, c string) (string, error) {
+		name := strings.TrimSpace(c)
+		v := readParameterInteractive(name)
+		ps[name] = v
+		return "", nil
+	})
 	for _, param := range serv.Params {
 		v := readParameterInteractive(param.Name)
-		param.Value = v
+		ps[param.Name] = v
 	}
-
-	resp, err := client.Post(url("test"), "application/json;charset=UTF-8", serv, nil)
+	params["params"] = ps
+	resp, err = client.Post(url("test"), "application/json;charset=UTF-8", params, nil)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("[ERROR]", err)
 	} else {
 		data := map[string]interface{}{}
 		err = json.Unmarshal([]byte(resp.Content), &data)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("[ERROR]", err)
 		} else {
-			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-			fmt.Println(data["log"])
-			fmt.Println("[CONTENT] ", data["content"])
+			fmt.Println("")
+			fmt.Println("Service Definition:")
+			fmt.Println("[NAMESPACE]", serv.Namespace)
+			fmt.Println("[PATH]", serv.Path)
+			fmt.Println("[METHOD]", serv.Method)
+			fmt.Println("Execution Results:")
+			fmt.Print(data["log"])
+			bytes, err := json.Marshal(data["header"])
+			if err != nil {
+				fmt.Println("[HEADER]", data["header"])
+			} else {
+				fmt.Println("[HEADER]", string(bytes))
+			}
+			bytes, err = json.Marshal(data["data"])
+			if err != nil {
+				fmt.Println("[DATA]", data["data"])
+			} else {
+				fmt.Println("[DATA]", string(bytes))
+			}
 		}
 	}
-
+	fmt.Println("Test complete.", "\n")
 }
 
 func readParameterInteractive(name string) string {

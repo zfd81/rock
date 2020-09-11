@@ -16,6 +16,27 @@ func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
 	return se.vm.Set(name, value)
 }
 
+func (se *JavaScriptImpl) GetVar(name string) (interface{}, error) {
+	value, err := se.vm.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	if value.IsString() {
+		return value.ToString()
+	} else if value.IsObject() {
+		return value.Export()
+	} else if value.IsNumber() {
+		val, err := value.ToInteger()
+		if err != nil {
+			return value.ToFloat()
+		}
+		return val, nil
+	} else if value.IsBoolean() {
+		return value.ToBoolean()
+	}
+	return nil, nil
+}
+
 func (se *JavaScriptImpl) AddFunc(name string, function Function) error {
 	return se.vm.Set(name, func(call otto.FunctionCall) otto.Value {
 		return function(call)

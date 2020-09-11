@@ -17,6 +17,7 @@ type Function func(call otto.FunctionCall) otto.Value
 
 type ScriptEngine interface {
 	AddVar(name string, value interface{}) error
+	GetVar(name string) (interface{}, error)
 	AddFunc(name string, function Function) error
 	SetScript(src string)
 	AddScript(src string)

@@ -1,17 +1,17 @@
-var _ = {
+var $ = {
     Promise: {
         create: function () {
             var promise = {
                 response: {},
                 then: function (func) {
-                    if (_.resp.status(this.response) == 200) {
-                        func(_.resp.data(this.response), _.resp.header(this.response));
+                    if ($.resp.status(this.response) == 200) {
+                        func($.resp.data(this.response), $.resp.header(this.response));
                     }
                     return this
                 },
                 catch: function (func) {
-                    if (_.resp.status(this.response) != 200) {
-                        func(_.resp.status(this.response), _.resp.data(this.response), _.resp.header(this.response));
+                    if ($.resp.status(this.response) != 200) {
+                        func($.resp.status(this.response), $.resp.data(this.response), $.resp.header(this.response));
                     }
                 }
             }
@@ -65,5 +65,8 @@ var _ = {
         var promise = this.Promise.create();
         promise.response = resp;
         return promise;
+    },
+    define: function (definition) {
+        __serv_definition = definition;
     }
 };

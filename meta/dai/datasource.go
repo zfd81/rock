@@ -3,7 +3,7 @@ package dai
 import (
 	"encoding/json"
 
-	"github.com/zfd81/parrot/core"
+	"github.com/zfd81/parrot/errs"
 	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/parrot/util/etcd"
 )
@@ -11,15 +11,15 @@ import (
 func CreateDataSource(ds *meta.DataSource) error {
 	data, err := json.Marshal(ds)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	key := meta.DataSourceKey(ds.Namespace, ds.Name)
 	v, err := etcd.Get(key)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	if v != nil {
-		return core.ErrDsExists
+		return errs.New(errs.ErrDsExists)
 	}
 	_, err = etcd.Put(key, string(data))
 	return err
@@ -33,15 +33,15 @@ func DeleteDataSource(namespace string, name string) (err error) {
 func ModifyDataSource(ds *meta.DataSource) error {
 	data, err := json.Marshal(ds)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	key := meta.DataSourceKey(ds.Namespace, ds.Name)
 	v, err := etcd.Get(key)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	if v == nil {
-		return core.ErrDsNotExist
+		return errs.New(errs.ErrDsNotExist)
 	}
 	_, err = etcd.Put(key, string(data))
 	return err

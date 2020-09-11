@@ -3,7 +3,7 @@ package dai
 import (
 	"encoding/json"
 
-	"github.com/zfd81/parrot/core"
+	"github.com/zfd81/parrot/errs"
 	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/parrot/util/etcd"
 )
@@ -15,15 +15,15 @@ import (
 func CreateService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	if v != nil {
-		return core.ErrServExists
+		return errs.New(errs.ErrServExists)
 	}
 	_, err = etcd.Put(key, string(data))
 	return err
@@ -37,15 +37,15 @@ func DeleteService(serv *meta.Service) (err error) {
 func ModifyService(serv *meta.Service) error {
 	data, err := json.Marshal(serv)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
 	v, err := etcd.Get(key)
 	if err != nil {
-		return err
+		return errs.NewError(err)
 	}
 	if v == nil {
-		return core.ErrServNotExist
+		return errs.New(errs.ErrServNotExist)
 	}
 	_, err = etcd.Put(key, string(data))
 	return err

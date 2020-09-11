@@ -8,11 +8,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/zfd81/parrot/http"
 	"github.com/zfd81/parrot/meta"
-	"gopkg.in/yaml.v2"
-
-	"github.com/spf13/cobra"
 )
 
 // NewServCommand returns the cobra command for "serv".
@@ -77,7 +75,6 @@ func servAddCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) != 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("serv add command requires serv file as its argument"))
 	}
-
 	path := args[0]
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
@@ -85,17 +82,15 @@ func servAddCommandFunc(cmd *cobra.Command, args []string) {
 		log.Println(prompt)
 		return
 	}
-	yamlFile, err := ioutil.ReadFile(path)
+	source, err := ioutil.ReadFile(path)
 	if err != nil {
 		fmt.Println(err)
 	}
-	serv := &meta.Service{}
-	err = yaml.Unmarshal(yamlFile, serv)
-	if err != nil {
-		fmt.Println(err)
+	param := map[string]interface{}{
+		"name":   info.Name(),
+		"source": string(source),
 	}
-
-	resp, err := client.Post(url("serv"), "application/json;charset=UTF-8", serv, nil)
+	resp, err := client.Post(url("serv"), "application/json;charset=UTF-8", param, nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -209,17 +204,15 @@ func servChangeCommandFunc(cmd *cobra.Command, args []string) {
 		log.Println(prompt)
 		return
 	}
-	yamlFile, err := ioutil.ReadFile(path)
+	source, err := ioutil.ReadFile(path)
 	if err != nil {
 		fmt.Println(err)
 	}
-	serv := &meta.Service{}
-	err = yaml.Unmarshal(yamlFile, serv)
-	if err != nil {
-		fmt.Println(err)
+	param := map[string]interface{}{
+		"name":   info.Name(),
+		"source": string(source),
 	}
-
-	resp, err := client.Put(url("serv"), serv, nil)
+	resp, err := client.Put(url("serv"), param, nil)
 	if err != nil {
 		fmt.Println(err)
 	} else {
