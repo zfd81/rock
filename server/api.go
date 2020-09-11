@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/spf13/cast"
 
@@ -87,7 +86,10 @@ func Test(c *gin.Context) {
 	}
 	log, resp, err := res.Run()
 	if err != nil {
-		log = log + fmt.Sprintf(env.LogFormat, time.Now().Format("2006-01-02 15:04:05.000")) + err.Error()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"log": log,
+		})
+		return
 	}
 	for k, v := range resp.Header {
 		c.Header(k, v)

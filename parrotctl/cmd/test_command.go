@@ -84,30 +84,37 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 	resp, err = client.Post(url("test"), "application/json;charset=UTF-8", params, nil)
 	if err != nil {
 		fmt.Println("[ERROR]", err)
+		return
+	}
+
+	data := map[string]interface{}{}
+	err = json.Unmarshal([]byte(resp.Content), &data)
+	if err != nil {
+		fmt.Println("[ERROR]", err)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println("[ERROR]", err)
-		} else {
-			fmt.Println("")
-			fmt.Println("Service Definition:")
-			fmt.Println("[NAMESPACE]", serv.Namespace)
-			fmt.Println("[PATH]", serv.Path)
-			fmt.Println("[METHOD]", serv.Method)
-			fmt.Println("Execution Results:")
-			fmt.Print(data["log"])
+		fmt.Println("")
+		fmt.Println("Service Definition:")
+		fmt.Println("[NAMESPACE]", serv.Namespace)
+		fmt.Println("[PATH]", serv.Path)
+		fmt.Println("[METHOD]", serv.Method)
+		fmt.Println("Execution Results:")
+		fmt.Print(data["log"])
+		if resp.StatusCode == 200 {
 			bytes, err := json.Marshal(data["header"])
 			if err != nil {
 				fmt.Println("[HEADER]", data["header"])
 			} else {
-				fmt.Println("[HEADER]", string(bytes))
+				if string(bytes) != "{}" {
+					fmt.Println("[HEADER]", string(bytes))
+				}
 			}
 			bytes, err = json.Marshal(data["data"])
 			if err != nil {
 				fmt.Println("[DATA]", data["data"])
 			} else {
-				fmt.Println("[DATA]", string(bytes))
+				if string(bytes) != "null" {
+					fmt.Println("[DATA]", string(bytes))
+				}
 			}
 		}
 	}

@@ -21,6 +21,7 @@ type Config struct {
 	Meta         Meta          `mapstructure:"meta"`
 	Etcd         Etcd          `mapstructure:"etcd"`
 	Cluster      Cluster       `mapstructure:"cluster"`
+	Terminal     Terminal      `mapstructure:"terminal"`
 }
 
 type APIServer struct {
@@ -43,6 +44,10 @@ type Etcd struct {
 type Cluster struct {
 	HeartbeatInterval        int `mapstructure:"heartbeat-interval"`
 	HeartbeatRecheckInterval int `mapstructure:"heartbeat-recheck-interval"`
+}
+
+type Terminal struct {
+	ErrorStyle string
 }
 
 const (
@@ -96,6 +101,9 @@ var defaultConf = Config{
 	Cluster: Cluster{
 		HeartbeatInterval:        9,
 		HeartbeatRecheckInterval: 5,
+	},
+	Terminal: Terminal{
+		ErrorStyle: "\x1b[0;41;37m%s\x1b[0m",
 	},
 }
 

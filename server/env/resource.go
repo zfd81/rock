@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	Regex = "[A-Za-z0-9_.]+"
+	Regex     = "[A-Za-z0-9_.]+"
+	LogFormat = "[LOG] %s "
 )
 
 type Resource interface {
@@ -117,7 +118,9 @@ func (r *ParrotResource) Run() (string, *http.Response, error) {
 	}
 	err := r.se.Run()
 	if err != nil {
-		r.log.WriteString(err.Error())
+		r.log.WriteString(fmt.Sprintf(LogFormat, time.Now().Format("2006-01-02 15:04:05.000")))
+		r.log.WriteString(fmt.Sprintf(config.Terminal.ErrorStyle, err))
+		r.log.WriteString("\n")
 	}
 	return r.log.String(), r.resp, err
 }

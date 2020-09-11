@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fatih/color"
+
 	"github.com/zfd81/parrot/server/env"
 
 	"github.com/gin-gonic/gin"
@@ -83,6 +85,6 @@ func Execute() {
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	fmt.Println(conf.GetConfig().Banner)
+	color.Green(conf.GetConfig().Banner)
 	Execute()
 }
