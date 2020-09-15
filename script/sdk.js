@@ -1,5 +1,5 @@
 var $ = {
-    Promise: {
+    HttpPromise: {
         create: function () {
             var promise = {
                 response: {},
@@ -44,25 +44,25 @@ var $ = {
     },
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);
-        var promise = this.Promise.create();
+        var promise = this.HttpPromise.create();
         promise.response = resp;
         return promise;
     },
     post: function (url, param, header) {
         var resp = _http_post(url, param, header);
-        var promise = this.Promise.create();
+        var promise = this.HttpPromise.create();
         promise.response = resp;
         return promise;
     },
     delete: function (url, param, header) {
         var resp = _http_delete(url, param, header);
-        var promise = this.Promise.create();
+        var promise = this.HttpPromise.create();
         promise.response = resp;
         return promise;
     },
     put: function (url, param, header) {
         var resp = _http_put(url, param, header);
-        var promise = this.Promise.create();
+        var promise = this.HttpPromise.create();
         promise.response = resp;
         return promise;
     },
