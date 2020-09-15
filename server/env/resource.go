@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zfd81/parrot/errs"
+
 	"github.com/zfd81/parrot/script/functions"
 
 	"github.com/spf13/cast"
@@ -119,7 +121,7 @@ func (r *ParrotResource) Run() (string, *http.Response, error) {
 	err := r.se.Run()
 	if err != nil {
 		r.log.WriteString(fmt.Sprintf(LogFormat, time.Now().Format("2006-01-02 15:04:05.000")))
-		r.log.WriteString(fmt.Sprintf(config.Terminal.ErrorStyle, err))
+		r.log.WriteString(errs.ErrorStyleFunc(err))
 		r.log.WriteString("\n")
 	}
 	return r.log.String(), r.resp, err

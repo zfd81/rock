@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/fatih/color"
+
 	"github.com/spf13/cast"
 )
 
@@ -17,6 +19,8 @@ const (
 	ErrParamNotFound = 497
 	ErrOther         = 499
 )
+
+var ErrorStyleFunc = color.New(color.FgHiWhite, color.BgRed).SprintFunc()
 
 var errors = map[int]string{
 	// Service related errors

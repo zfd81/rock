@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/gin-gonic/gin"
 
 	"github.com/zfd81/parrot/server/env"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/zfd81/parrot/cluster"
 	"github.com/zfd81/parrot/conf"
