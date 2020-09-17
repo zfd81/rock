@@ -12,14 +12,12 @@ import (
 
 	"github.com/zfd81/parrot/meta"
 
-	"github.com/zfd81/parrot/server/env"
-
 	"github.com/gin-gonic/gin"
 )
 
 func CallGetService(c *gin.Context) {
 	path := c.Param("path")
-	resource := env.SelectResource(http.MethodGet, path)
+	resource := SelectResource(http.MethodGet, path)
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
@@ -51,7 +49,7 @@ func CallGetService(c *gin.Context) {
 
 func CallPostService(c *gin.Context) {
 	path := c.Param("path")
-	resource := env.SelectResource(http.MethodPost, path)
+	resource := SelectResource(http.MethodPost, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -84,7 +82,7 @@ func CallPostService(c *gin.Context) {
 
 func CallPutService(c *gin.Context) {
 	path := c.Param("path")
-	resource := env.SelectResource(http.MethodPut, path)
+	resource := SelectResource(http.MethodPut, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -117,7 +115,7 @@ func CallPutService(c *gin.Context) {
 
 func CallDeleteService(c *gin.Context) {
 	path := c.Param("path")
-	resource := env.SelectResource(http.MethodDelete, path)
+	resource := SelectResource(http.MethodDelete, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, errs.New(404, "Target service["+path+"] not exist."))
@@ -145,7 +143,7 @@ func CallDeleteService(c *gin.Context) {
 	c.JSON(http.StatusOK, resp.Data)
 }
 
-func wrapParam(c *gin.Context, resource env.Resource) error {
+func wrapParam(c *gin.Context, resource Resource) error {
 	if len(resource.GetRequestParams()) > 0 {
 		p, err := param(c)
 		if err != nil {

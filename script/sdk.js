@@ -1,25 +1,62 @@
 var $ = {
     HttpPromise: {
-        create: function () {
+        create: function (response) {
             var promise = {
-                response: {},
+                status: $.resp.status(response) == 200,
                 then: function (func) {
-                    if ($.resp.status(this.response) == 200) {
-                        func($.resp.data(this.response), $.resp.header(this.response));
+                    if (this.status) {
+                        func($.resp.data(response), $.resp.header(response));
                     }
                     return this
                 },
                 catch: function (func) {
-                    if ($.resp.status(this.response) != 200) {
-                        func($.resp.status(this.response), $.resp.data(this.response), $.resp.header(this.response));
+                    if (!this.status) {
+                        func($.resp.status(response), $.resp.data(response), $.resp.header(response));
                     }
                 }
             }
             return promise
         }
     },
+    DBPromise: {
+        create: function (result) {
+            var promise = {
+                status: result["Code"] == 200,
+                then: function (func) {
+                    if (this.status) {
+                        func(result["Data"]);
+                    }
+                    return this
+                },
+                catch: function (func) {
+                    if (!this.status) {
+                        func(result["Message"]);
+                    }
+                }
+            }
+            return promise
+        }
+    },
+    DB: {
+        open: function (name) {
+            var db = {
+                query: function (sql, arg, pageNumber, pageSize) {
+                        var result = _db_query(name, sql, arg, pageNumber, pageSize);
+                    return $.DBPromise.create(result);
+                },
+                queryOne: function (sql, arg) {
+                    var result = _db_queryOne(name, sql, arg);
+                    return $.DBPromise.create(result);
+                },
+            }
+            return db
+        }
+    },
     log: function (msg) {
         _sys_log(msg);
+    },
+    err: function (msg) {
+        _sys_err(msg);
     },
     resp: {
         status: function (resp) {
@@ -30,10 +67,11 @@ var $ = {
         },
         data: function (resp) {
             var body = this.content(resp)
-            if (typeof body == "undefined" || body == null || body == "") {
+            try {
+                return JSON.parse(body);
+            } catch (e) {
                 return {}
             }
-            return JSON.parse(body);
         },
         header: function (resp) {
             return resp["Header"];
@@ -44,26 +82,23 @@ var $ = {
     },
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);
-        var promise = this.HttpPromise.create();
-        promise.response = resp;
+        var promise = this.HttpPromise.create(resp);
+        // promise.response = resp;
         return promise;
     },
     post: function (url, param, header) {
         var resp = _http_post(url, param, header);
-        var promise = this.HttpPromise.create();
-        promise.response = resp;
+        var promise = this.HttpPromise.create(resp);
         return promise;
     },
     delete: function (url, param, header) {
         var resp = _http_delete(url, param, header);
-        var promise = this.HttpPromise.create();
-        promise.response = resp;
+        var promise = this.HttpPromise.create(resp);
         return promise;
     },
     put: function (url, param, header) {
         var resp = _http_put(url, param, header);
-        var promise = this.HttpPromise.create();
-        promise.response = resp;
+        var promise = this.HttpPromise.create(resp);
         return promise;
     },
     define: function (definition) {

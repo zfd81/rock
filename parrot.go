@@ -9,8 +9,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 
-	"github.com/zfd81/parrot/server/env"
-
 	"github.com/zfd81/parrot/cluster"
 	"github.com/zfd81/parrot/conf"
 	"github.com/zfd81/parrot/server"
@@ -67,9 +65,9 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 		return err
 	})
 
-	env.WatchMeta()                     // 监测元数据变化
-	env.InitDbs()                       // 根据元数据初始化数据源
-	env.InitResources()                 // 根据元数据初始化资源
+	server.WatchMeta()                  // 监测元数据变化
+	server.InitDbs()                    // 根据元数据初始化数据源
+	server.InitResources()              // 根据元数据初始化资源
 	cluster.Register(time.Now().Unix()) // 集群注册
 	if err := g.Wait(); err != nil {
 		log.Fatal(err)

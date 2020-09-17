@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zfd81/parrot/core"
+
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/parrot/script"
 
 	"github.com/zfd81/parrot/errs"
 	"github.com/zfd81/parrot/meta/dai"
-
-	"github.com/zfd81/parrot/server/env"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zfd81/parrot/meta"
@@ -58,7 +58,7 @@ func Test(c *gin.Context) {
 	}
 	serv.Name = p.GetString("name")
 	serv.Script = code
-	res := env.NewResource(serv)
+	res := core.NewResource(serv)
 	ps, found := p.Get("params")
 	if found {
 		params := cast.ToStringMap(ps)
@@ -84,6 +84,9 @@ func Test(c *gin.Context) {
 			}
 		}
 	}
+	res.SetContext(&ResourceContext{
+		namespace: res.GetNamespace(),
+	})
 	log, resp, err := res.Run()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
