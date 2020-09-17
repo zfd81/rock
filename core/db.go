@@ -1,4 +1,4 @@
-package env
+package core
 
 import (
 	"fmt"
@@ -10,9 +10,16 @@ import (
 )
 
 type ParrotDB struct {
-	Namespace string
+	namespace string
 	Name      string
 	*rsql.DB
+}
+
+func (d *ParrotDB) GetNamespace() string {
+	if d.namespace == "" {
+		return meta.DefaultNamespace
+	}
+	return d.namespace
 }
 
 func NewDB(ds *meta.DataSource) (*ParrotDB, error) {
@@ -26,7 +33,7 @@ func NewDB(ds *meta.DataSource) (*ParrotDB, error) {
 		return nil, err
 	}
 	return &ParrotDB{
-		Namespace: ds.Namespace,
+		namespace: ds.Namespace,
 		Name:      ds.Name,
 		DB:        db,
 	}, nil

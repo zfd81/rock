@@ -2,8 +2,16 @@ package script
 
 import (
 	"bytes"
+	"log"
+
+	"github.com/gobuffalo/packr"
 
 	"github.com/robertkrimen/otto"
+)
+
+var (
+	sdkFile   = "sdk.js"
+	sdkSource []byte
 )
 
 type JavaScriptImpl struct {
@@ -56,4 +64,21 @@ func (se *JavaScriptImpl) AddScript(src string) {
 func (se *JavaScriptImpl) Run() (err error) {
 	_, err = se.vm.Run(se.buffer.String())
 	return
+}
+
+func New() ScriptEngine {
+	return &JavaScriptImpl{
+		vm:     otto.New(),
+		sdk:    string(sdkSource),
+		buffer: bytes.NewBuffer(sdkSource),
+	}
+}
+
+func init() {
+	box := packr.NewBox("./")
+	src, err := box.FindString(sdkFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sdkSource = []byte(src)
 }

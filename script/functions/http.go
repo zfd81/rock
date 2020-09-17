@@ -141,7 +141,7 @@ func HttpPut(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func RespWrite(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func RespWrite(process script.Process) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		var data interface{}
 		var err error
@@ -151,41 +151,41 @@ func RespWrite(env script.Environment) func(call otto.FunctionCall) otto.Value {
 			data, err = data_v.Export()
 			if err != nil {
 				log.Panicln(err)
-				env.Println(err)
+				process.Println(err)
 			}
 		} else if data_v.IsString() {
 			data, err = data_v.ToString()
 			if err != nil {
 				log.Panicln(err)
-				env.Println(err)
+				process.Println(err)
 			}
 		} else if data_v.IsBoolean() {
 			data, err = data_v.ToBoolean()
 			if err != nil {
 				log.Panicln(err)
-				env.Println(err)
+				process.Println(err)
 			}
 		} else if data_v.IsNumber() {
 			data, err = data_v.ToInteger()
 			if err != nil {
 				log.Panicln(err)
-				env.Println(err)
+				process.Println(err)
 			}
 		}
 
-		env.SetRespData(data)
+		process.SetRespData(data)
 
 		header_v := call.Argument(1)
 		if header_v.IsObject() {
 			header_v, err := header_v.Export()
 			if err != nil {
 				log.Panicln(err)
-				env.Println(err)
+				process.Println(err)
 			} else {
 				val, ok := header_v.(map[string]interface{})
 				if ok {
 					for k, v := range val {
-						env.AddRespHeader(k, v)
+						process.AddRespHeader(k, v)
 					}
 				}
 			}

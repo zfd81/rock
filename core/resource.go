@@ -1,4 +1,4 @@
-package env
+package core
 
 import (
 	"bytes"
@@ -25,21 +25,13 @@ const (
 	LogFormat = "[LOG] %s "
 )
 
-type Resource interface {
-	GetMethod() string
-	GetPath() string
-	GetRegexPath() string
-	GetLevel() int
-	GetPathParams() []*meta.Parameter
-	AddPathParam(param *meta.Parameter)
-	GetRequestParams() []*meta.Parameter
-	AddRequestParam(param *meta.Parameter)
-	Run() (log string, resp *http.Response, err error)
-	Clear()
+type Context interface {
+	GetDataSource(name string) script.DB
 }
 
 type ParrotResource struct {
 	namespace     string              //命名空间 注:不能包含"/"
+	context       Context             //上下文
 	se            script.ScriptEngine // 脚本引擎
 	method        string              // 资源请求方法
 	path          string              // 资源原始路径
@@ -49,6 +41,10 @@ type ParrotResource struct {
 	requestParams []*meta.Parameter   // 请求参数
 	log           *bytes.Buffer
 	resp          *http.Response
+}
+
+func (r *ParrotResource) SetContext(context Context) {
+	r.context = context
 }
 
 func (r *ParrotResource) GetMethod() string {
@@ -90,10 +86,23 @@ func (r *ParrotResource) GetNamespace() string {
 	return r.namespace
 }
 
+func (r *ParrotResource) SelectDataSource(name string) script.DB {
+	return r.context.GetDataSource(name)
+}
+
 func (r *ParrotResource) Println(args ...interface{}) error {
-	r.log.WriteString(fmt.Sprintf(LogFormat, time.Now().Format("2006-01-02 15:04:05.000")))
+	r.log.WriteString(fmt.Sprintf("[INFO] %s ", time.Now().Format("2006-01-02 15:04:05.000")))
 	for _, arg := range args {
 		r.log.WriteString(cast.ToString(arg))
+	}
+	r.log.WriteString("\n")
+	return nil
+}
+
+func (r *ParrotResource) Perror(args ...interface{}) error {
+	r.log.WriteString(fmt.Sprintf("[ERROR] %s ", time.Now().Format("2006-01-02 15:04:05.000")))
+	for _, arg := range args {
+		r.log.WriteString(errs.ErrorStyleFunc(cast.ToString(arg)))
 	}
 	r.log.WriteString("\n")
 	return nil
@@ -132,7 +141,7 @@ func (r *ParrotResource) Clear() {
 	r.resp.Clear()
 }
 
-func NewResource(serv *meta.Service) Resource {
+func NewResource(serv *meta.Service) *ParrotResource {
 	path := serv.Path
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -159,11 +168,14 @@ func NewResource(serv *meta.Service) Resource {
 	se := script.New()
 	se.SetScript(serv.Script)
 	se.AddFunc("_sys_log", functions.SysLog(res))
+	se.AddFunc("_sys_err", functions.SysError(res))
 	se.AddFunc("_resp_write", functions.RespWrite(res))
 	se.AddFunc("_http_get", functions.HttpGet)
 	se.AddFunc("_http_post", functions.HttpPost)
 	se.AddFunc("_http_delete", functions.HttpDelete)
 	se.AddFunc("_http_put", functions.HttpPut)
+	se.AddFunc("_db_query", functions.DBQuery(res))
+	se.AddFunc("_db_queryOne", functions.DBQueryOne(res))
 	res.se = se
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath

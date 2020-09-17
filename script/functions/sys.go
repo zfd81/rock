@@ -5,10 +5,19 @@ import (
 	"github.com/zfd81/parrot/script"
 )
 
-func SysLog(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func SysLog(process script.Process) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		for _, arg := range call.ArgumentList {
-			env.Println(arg.ToString())
+			process.Println(arg.ToString())
+		}
+		return otto.Value{}
+	}
+}
+
+func SysError(process script.Process) func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		for _, arg := range call.ArgumentList {
+			process.Perror(arg.ToString())
 		}
 		return otto.Value{}
 	}

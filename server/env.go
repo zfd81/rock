@@ -1,12 +1,15 @@
-package env
+package server
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/zfd81/parrot/script"
+
+	"github.com/zfd81/parrot/core"
 
 	"github.com/pkg/errors"
 
@@ -14,8 +17,32 @@ import (
 
 	"github.com/zfd81/parrot/util/etcd"
 
+	"github.com/zfd81/parrot/http"
 	"github.com/zfd81/parrot/meta"
 )
+
+type Resource interface {
+	SetContext(context core.Context)
+	GetNamespace() string
+	GetMethod() string
+	GetPath() string
+	GetRegexPath() string
+	GetLevel() int
+	GetPathParams() []*meta.Parameter
+	AddPathParam(param *meta.Parameter)
+	GetRequestParams() []*meta.Parameter
+	AddRequestParam(param *meta.Parameter)
+	Run() (log string, resp *http.Response, err error)
+	Clear()
+}
+
+type ResourceContext struct {
+	namespace string
+}
+
+func (c *ResourceContext) GetDataSource(name string) script.DB {
+	return SelectDataSource(c.namespace, name)
+}
 
 var (
 	config = conf.GetConfig()
@@ -27,7 +54,7 @@ var (
 		http.MethodDelete: map[int][]Resource{}, // DELETE资源映射
 	}
 
-	dbs = map[string]*ParrotDB{}
+	dbs = map[string]*core.ParrotDB{}
 )
 
 func GetResourceSet(method string, level int) []Resource {
@@ -45,6 +72,9 @@ func AddResource(resource Resource) {
 	if rs == nil {
 		rs = []Resource{}
 	}
+	resource.SetContext(&ResourceContext{
+		namespace: resource.GetNamespace(),
+	})
 	resources[method][level] = append(rs, resource)
 }
 
@@ -105,7 +135,7 @@ func InitResources() error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			res := NewResource(serv)
+			res := core.NewResource(serv)
 			AddResource(res)
 			_, _, path := meta.ServicePath(string(kv.Key))
 			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
@@ -117,14 +147,17 @@ func InitResources() error {
 }
 
 func AddDataSource(ds *meta.DataSource) error {
-	db, err := NewDB(ds)
+	db, err := core.NewDB(ds)
 	if err == nil {
-		dbs[meta.FormatPath(db.Namespace)+meta.FormatPath(db.Name)] = db
+		dbs[meta.FormatPath(db.GetNamespace())+meta.FormatPath(db.Name)] = db
 	}
 	return err
 }
 
-func RemoveDataSource(namespace string, name string) *ParrotDB {
+func RemoveDataSource(namespace string, name string) *core.ParrotDB {
+	if namespace == "" {
+		namespace = meta.DefaultNamespace
+	}
 	key := meta.FormatPath(namespace) + meta.FormatPath(name)
 	value, found := dbs[key]
 	if found {
@@ -132,6 +165,18 @@ func RemoveDataSource(namespace string, name string) *ParrotDB {
 		return value
 	}
 	return nil
+}
+
+func SelectDataSource(namespace string, name string) *core.ParrotDB {
+	if namespace == "" {
+		namespace = meta.DefaultNamespace
+	}
+	key := meta.FormatPath(namespace) + meta.FormatPath(name)
+	//value, found := dbs[key]
+	//if found {
+	//	return value
+	//}
+	return dbs[key]
 }
 
 func InitDbs() error {
@@ -174,7 +219,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				log.Fatal(err)
 				return
 			}
-			res := NewResource(serv)
+			res := core.NewResource(serv)
 			AddResource(res)
 			_, _, path := meta.ServicePath(string(key))
 			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
@@ -202,7 +247,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				log.Fatal(err)
 				return
 			}
-			res := NewResource(serv)
+			res := core.NewResource(serv)
 			RemoveResource(serv.Method, serv.Path)
 			AddResource(res)
 			_, _, path := meta.ServicePath(string(key))
@@ -220,7 +265,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			namespace, name := meta.DataSourcePath(string(key))
 			db := RemoveDataSource(namespace, name)
 			if db != nil {
-				fmt.Printf("[INFO] Service %s:%s deleted successfully \n", db.Namespace, db.Name)
+				fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace, "", 1), db.Name)
 			}
 			break
 		}
