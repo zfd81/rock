@@ -14,7 +14,7 @@ import (
 	"github.com/zfd81/parrot/server"
 
 	"github.com/spf13/cobra"
-	"github.com/zfd81/parrot/parrotctl/cmd"
+	"github.com/zfd81/parrot/sunfrctl/cmd"
 	"golang.org/x/sync/errgroup"
 )
 

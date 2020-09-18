@@ -9,11 +9,11 @@ import (
 func NewVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Prints the version of parrotctl",
+		Short: "Prints the version of sunfrctl",
 		Run:   versionCommandFunc,
 	}
 }
 
 func versionCommandFunc(cmd *cobra.Command, args []string) {
-	fmt.Println("parrotctl version:", Version)
+	fmt.Println("sunfrctl version:", Version)
 }
