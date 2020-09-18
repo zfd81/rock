@@ -7,7 +7,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/zfd81/parrot/conf"
+	"github.com/zfd81/sunflower/conf"
 )
 
 type OperType int

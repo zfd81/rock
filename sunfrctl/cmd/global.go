@@ -1,6 +1,6 @@
 package cmd
 
-import "github.com/zfd81/parrot/http"
+import "github.com/zfd81/sunflower/http"
 
 type GlobalFlags struct {
 	Endpoints []string

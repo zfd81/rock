@@ -1,4 +1,5 @@
 var $ = {
+    util: {},
     HttpPromise: {
         create: function (response) {
             var promise = {
@@ -41,11 +42,15 @@ var $ = {
         open: function (name) {
             var db = {
                 query: function (sql, arg, pageNumber, pageSize) {
-                        var result = _db_query(name, sql, arg, pageNumber, pageSize);
+                    var result = _db_query(name, sql, arg, pageNumber, pageSize);
                     return $.DBPromise.create(result);
                 },
                 queryOne: function (sql, arg) {
                     var result = _db_queryOne(name, sql, arg);
+                    return $.DBPromise.create(result);
+                },
+                save: function (table, arg) {
+                    var result = _db_save(name, table, arg);
                     return $.DBPromise.create(result);
                 },
             }
@@ -83,7 +88,6 @@ var $ = {
     get: function (url, param, header) {
         var resp = _http_get(url, param, header);
         var promise = this.HttpPromise.create(resp);
-        // promise.response = resp;
         return promise;
     },
     post: function (url, param, header) {
@@ -103,5 +107,13 @@ var $ = {
     },
     define: function (definition) {
         __serv_definition = definition;
+    },
+    date: function () {
+        var date = new Date()
+        return date.toLocaleDateString()
+    },
+    time: function () {
+        var date = new Date()
+        return date.toLocaleDateString() + " " + date.toLocaleTimeString()
     }
 };

@@ -1,12 +1,13 @@
 package functions
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/zfd81/parrot/errs"
+	"github.com/zfd81/sunflower/errs"
 
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/script"
 
 	"github.com/robertkrimen/otto"
 )
@@ -132,6 +133,39 @@ func DBQueryOne(env script.Environment) func(call otto.FunctionCall) otto.Value 
 			return ErrorResult(call, err.Error())
 		}
 		return Result(call, m)
+	}
+}
+
+func DBSave(env script.Environment) func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) (value otto.Value) {
+		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
+		db := env.SelectDataSource(name)                     //获取数据源DB
+		if reflect.ValueOf(db).IsNil() {
+			return ErrorResult(call, "Data source["+name+"] not found")
+		}
+		table_v := call.Argument(1)
+		if !table_v.IsString() {
+			return ErrorResult(call, "Table name cannot be empty")
+		}
+		table := strings.TrimSpace(table_v.String()) //获取SQL
+		arg_v := call.Argument(2)
+		if !arg_v.IsObject() {
+			return ErrorResult(call, "Parameter data type error")
+		}
+		arg, err := arg_v.Export()
+		if err != nil {
+			return ErrorResult(call, err.Error())
+		}
+		aaa := arg.(map[string]interface{})
+		for k, v := range aaa {
+			fmt.Println(k, ":", v)
+		}
+
+		num, err := db.Save(arg, table)
+		if err != nil {
+			return ErrorResult(call, err.Error())
+		}
+		return Result(call, num)
 	}
 }
 

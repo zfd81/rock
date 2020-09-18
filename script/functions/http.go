@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/robertkrimen/otto"
-	"github.com/zfd81/parrot/http"
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/http"
+	"github.com/zfd81/sunflower/script"
 )
 
 func HttpGet(call otto.FunctionCall) (value otto.Value) {

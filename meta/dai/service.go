@@ -3,9 +3,9 @@ package dai
 import (
 	"encoding/json"
 
-	"github.com/zfd81/parrot/errs"
-	"github.com/zfd81/parrot/meta"
-	"github.com/zfd81/parrot/util/etcd"
+	"github.com/zfd81/sunflower/errs"
+	"github.com/zfd81/sunflower/meta"
+	"github.com/zfd81/sunflower/util/etcd"
 )
 
 /**

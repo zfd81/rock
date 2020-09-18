@@ -1,4 +1,4 @@
-module github.com/zfd81/parrot
+module github.com/zfd81/sunflower
 
 go 1.14
 

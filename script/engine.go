@@ -35,8 +35,10 @@ type Process interface {
 type DB interface {
 	QueryMap(query string, arg interface{}) (container.Map, error)
 	QueryMapList(query string, arg interface{}, pageNumber int, pageSize int) ([]container.Map, error)
-	Exec(query string, arg interface{}) (int64, error)
 	Query(query string, arg interface{}) (*rsql.Rows, error)
+	Exec(query string, arg interface{}) (int64, error)
+	Save(arg interface{}, table ...string) (int64, error)
+	BatchSave(arg []interface{}, table ...string) (int64, error)
 }
 
 type Result struct {

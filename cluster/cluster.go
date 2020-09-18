@@ -9,8 +9,8 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
-	"github.com/zfd81/parrot/conf"
-	"github.com/zfd81/parrot/util/etcd"
+	"github.com/zfd81/sunflower/conf"
+	"github.com/zfd81/sunflower/util/etcd"
 )
 
 const (

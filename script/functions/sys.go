@@ -2,7 +2,7 @@ package functions
 
 import (
 	"github.com/robertkrimen/otto"
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/script"
 )
 
 func SysLog(process script.Process) func(call otto.FunctionCall) otto.Value {

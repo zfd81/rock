@@ -5,18 +5,18 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zfd81/parrot/core"
+	"github.com/zfd81/sunflower/core"
 
 	"github.com/spf13/cast"
 
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/script"
 
-	"github.com/zfd81/parrot/errs"
-	"github.com/zfd81/parrot/meta/dai"
+	"github.com/zfd81/sunflower/errs"
+	"github.com/zfd81/sunflower/meta/dai"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zfd81/parrot/meta"
 	"github.com/zfd81/rooster/types/container"
+	"github.com/zfd81/sunflower/meta"
 )
 
 func param(c *gin.Context) (container.Map, error) {

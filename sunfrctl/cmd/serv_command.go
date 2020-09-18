@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/zfd81/parrot/http"
-	"github.com/zfd81/parrot/meta"
+	"github.com/zfd81/sunflower/http"
+	"github.com/zfd81/sunflower/meta"
 )
 
 // NewServCommand returns the cobra command for "serv".

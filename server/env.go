@@ -7,18 +7,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/script"
 
-	"github.com/zfd81/parrot/core"
+	"github.com/zfd81/sunflower/core"
 
 	"github.com/pkg/errors"
 
-	"github.com/zfd81/parrot/conf"
+	"github.com/zfd81/sunflower/conf"
 
-	"github.com/zfd81/parrot/util/etcd"
+	"github.com/zfd81/sunflower/util/etcd"
 
-	"github.com/zfd81/parrot/http"
-	"github.com/zfd81/parrot/meta"
+	"github.com/zfd81/sunflower/http"
+	"github.com/zfd81/sunflower/meta"
 )
 
 type Resource interface {

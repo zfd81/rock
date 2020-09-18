@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/zfd81/parrot/http"
-	"github.com/zfd81/parrot/meta"
+	"github.com/zfd81/sunflower/http"
+	"github.com/zfd81/sunflower/meta"
 	"gopkg.in/yaml.v2"
 
 	"github.com/spf13/cobra"

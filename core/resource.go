@@ -6,18 +6,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zfd81/parrot/errs"
+	"github.com/zfd81/sunflower/errs"
 
-	"github.com/zfd81/parrot/script/functions"
+	"github.com/zfd81/sunflower/script/functions"
 
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/rooster/util"
 
-	"github.com/zfd81/parrot/meta"
+	"github.com/zfd81/sunflower/meta"
 
-	"github.com/zfd81/parrot/http"
-	"github.com/zfd81/parrot/script"
+	"github.com/zfd81/sunflower/http"
+	"github.com/zfd81/sunflower/script"
 )
 
 const (
@@ -176,6 +176,7 @@ func NewResource(serv *meta.Service) *ParrotResource {
 	se.AddFunc("_http_put", functions.HttpPut)
 	se.AddFunc("_db_query", functions.DBQuery(res))
 	se.AddFunc("_db_queryOne", functions.DBQueryOne(res))
+	se.AddFunc("_db_save", functions.DBSave(res))
 	res.se = se
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath
