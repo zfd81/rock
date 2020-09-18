@@ -177,6 +177,7 @@ func NewResource(serv *meta.Service) *ParrotResource {
 	se.AddFunc("_db_query", functions.DBQuery(res))
 	se.AddFunc("_db_queryOne", functions.DBQueryOne(res))
 	se.AddFunc("_db_save", functions.DBSave(res))
+	se.AddFunc("_db_exec", functions.DBExec(res))
 	res.se = se
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath

@@ -53,6 +53,10 @@ var $ = {
                     var result = _db_save(name, table, arg);
                     return $.DBPromise.create(result);
                 },
+                exec: function (sql, arg) {
+                    var result = _db_exec(name, sql, arg);
+                    return $.DBPromise.create(result);
+                },
             }
             return db
         }
