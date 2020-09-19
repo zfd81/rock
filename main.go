@@ -9,12 +9,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 
-	"github.com/zfd81/sunflower/cluster"
-	"github.com/zfd81/sunflower/conf"
-	"github.com/zfd81/sunflower/server"
+	"github.com/zfd81/sunny/cluster"
+	"github.com/zfd81/sunny/conf"
+	"github.com/zfd81/sunny/server"
 
 	"github.com/spf13/cobra"
-	"github.com/zfd81/sunflower/sunfrctl/cmd"
+	"github.com/zfd81/sunny/sunnyctl/cmd"
 	"golang.org/x/sync/errgroup"
 )
 

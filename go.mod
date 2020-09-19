@@ -1,4 +1,4 @@
-module github.com/zfd81/sunflower
+module github.com/zfd81/sunny
 
 go 1.14
 

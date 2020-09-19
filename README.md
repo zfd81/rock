@@ -1,4 +1,4 @@
-# sunflower
+# sunny
 
 
 ## Example
@@ -59,7 +59,7 @@ _.post("http://localhost:8080/login", {
     });
 ```
 
-## parrot API
+## sunny API
 
 ##### get(url[, param, header])
 

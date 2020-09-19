@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zfd81/sunflower/conf"
+	"github.com/zfd81/sunny/conf"
 
-	"github.com/zfd81/sunflower/errs"
+	"github.com/zfd81/sunny/errs"
 
 	"github.com/spf13/cast"
 
-	"github.com/zfd81/sunflower/meta"
+	"github.com/zfd81/sunny/meta"
 
 	"github.com/gin-gonic/gin"
 )
