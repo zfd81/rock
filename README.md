@@ -1,4 +1,4 @@
-# sunny
+# rock
 
 
 ## Example
@@ -59,7 +59,7 @@ _.post("http://localhost:8080/login", {
     });
 ```
 
-## sunny API
+## rock API
 
 ##### get(url[, param, header])
 
