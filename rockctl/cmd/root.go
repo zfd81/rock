@@ -8,7 +8,7 @@ import (
 
 const (
 	Version        = "1.0"
-	cliName        = "sunnyctl"
+	cliName        = "rockctl"
 	cliDescription = "A simple command line client for parrot."
 
 	defaultDialTimeout      = 2 * time.Second
@@ -22,7 +22,7 @@ var (
 	rootCmd     = &cobra.Command{
 		Use:        cliName,
 		Short:      cliDescription,
-		SuggestFor: []string{"sunnyctl"},
+		SuggestFor: []string{"rockctl"},
 	}
 )
 

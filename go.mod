@@ -1,4 +1,4 @@
-module github.com/zfd81/sunny
+module github.com/zfd81/rock
 
 go 1.14
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rooster/rsql"
-	"github.com/zfd81/sunny/meta"
 )
 
 type ParrotDB struct {

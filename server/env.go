@@ -7,18 +7,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zfd81/sunny/script"
+	"github.com/zfd81/rock/script"
 
-	"github.com/zfd81/sunny/core"
+	"github.com/zfd81/rock/core"
 
 	"github.com/pkg/errors"
 
-	"github.com/zfd81/sunny/conf"
+	"github.com/zfd81/rock/conf"
 
-	"github.com/zfd81/sunny/util/etcd"
+	"github.com/zfd81/rock/util/etcd"
 
-	"github.com/zfd81/sunny/http"
-	"github.com/zfd81/sunny/meta"
+	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/meta"
 )
 
 type Resource interface {

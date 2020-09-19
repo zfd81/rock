@@ -3,9 +3,9 @@ package dai
 import (
 	"encoding/json"
 
-	"github.com/zfd81/sunny/errs"
-	"github.com/zfd81/sunny/meta"
-	"github.com/zfd81/sunny/util/etcd"
+	"github.com/zfd81/rock/errs"
+	"github.com/zfd81/rock/meta"
+	"github.com/zfd81/rock/util/etcd"
 )
 
 /**

@@ -6,18 +6,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zfd81/sunny/errs"
+	"github.com/zfd81/rock/errs"
 
-	"github.com/zfd81/sunny/script/functions"
+	"github.com/zfd81/rock/script/functions"
 
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/rooster/util"
 
-	"github.com/zfd81/sunny/meta"
+	"github.com/zfd81/rock/meta"
 
-	"github.com/zfd81/sunny/http"
-	"github.com/zfd81/sunny/script"
+	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/script"
 )
 
 const (

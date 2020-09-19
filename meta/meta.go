@@ -3,7 +3,7 @@ package meta
 import (
 	"strings"
 
-	"github.com/zfd81/sunny/conf"
+	"github.com/zfd81/rock/conf"
 )
 
 const (

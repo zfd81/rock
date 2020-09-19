@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zfd81/sunny/errs"
+	"github.com/zfd81/rock/errs"
 
-	"github.com/zfd81/sunny/script"
+	"github.com/zfd81/rock/script"
 
 	"github.com/robertkrimen/otto"
 )

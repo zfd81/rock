@@ -10,7 +10,7 @@ import (
 	"github.com/zfd81/rooster/util"
 
 	"github.com/spf13/cobra"
-	"github.com/zfd81/sunny/meta"
+	"github.com/zfd81/rock/meta"
 )
 
 var (
