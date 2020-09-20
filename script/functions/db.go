@@ -1,7 +1,6 @@
 package functions
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -156,12 +155,18 @@ func DBSave(env script.Environment) func(call otto.FunctionCall) otto.Value {
 		if err != nil {
 			return ErrorResult(call, err.Error())
 		}
-		aaa := arg.(map[string]interface{})
-		for k, v := range aaa {
-			fmt.Println(k, ":", v)
+		var num int64 = -1
+		m, ok := arg.(map[string]interface{})
+		if ok {
+			num, err = db.Save(m, table)
+		} else {
+			l, ok := arg.([]map[string]interface{})
+			if ok {
+				num, err = db.BatchSave(SliceParam(l), table)
+			} else {
+				return ErrorResult(call, "Parameter data type error")
+			}
 		}
-
-		num, err := db.Save(arg, table)
 		if err != nil {
 			return ErrorResult(call, err.Error())
 		}
@@ -231,4 +236,12 @@ func ErrorResult(call otto.FunctionCall, err string) (value otto.Value) {
 	}
 	value, _ = call.Otto.ToValue(result)
 	return
+}
+
+func SliceParam(args []map[string]interface{}) []interface{} {
+	param := make([]interface{}, len(args))
+	for i, v := range args {
+		param[i] = v
+	}
+	return param
 }
