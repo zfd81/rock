@@ -1,19 +1,17 @@
 package dai
 
 import (
-	"encoding/json"
-
 	"github.com/zfd81/rock/errs"
 	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rock/util/etcd"
 )
 
 func CreateDataSource(ds *meta.DataSource) error {
-	data, err := json.Marshal(ds)
+	jsonstr, err := ds.String()
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := meta.DataSourceKey(ds.Namespace, ds.Name)
+	key := ds.Key()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -21,21 +19,21 @@ func CreateDataSource(ds *meta.DataSource) error {
 	if v != nil {
 		return errs.New(errs.ErrDsExists)
 	}
-	_, err = etcd.Put(key, string(data))
+	_, err = etcd.Put(key, jsonstr)
 	return err
 }
 
-func DeleteDataSource(namespace string, name string) (err error) {
-	_, err = etcd.Del(meta.DataSourceKey(namespace, name))
-	return
+func DeleteDataSource(ds *meta.DataSource) error {
+	_, err := etcd.Del(ds.Key())
+	return err
 }
 
 func ModifyDataSource(ds *meta.DataSource) error {
-	data, err := json.Marshal(ds)
+	jsonstr, err := ds.String()
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := meta.DataSourceKey(ds.Namespace, ds.Name)
+	key := ds.Key()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -43,20 +41,20 @@ func ModifyDataSource(ds *meta.DataSource) error {
 	if v == nil {
 		return errs.New(errs.ErrDsNotExist)
 	}
-	_, err = etcd.Put(key, string(data))
+	_, err = etcd.Put(key, jsonstr)
 	return err
 }
 
 func GetDataSource(namespace string, name string) (*meta.DataSource, error) {
-	v, err := etcd.Get(meta.DataSourceKey(namespace, name))
+	key := meta.DataSourceKey(namespace, name)
+	v, err := etcd.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	if v == nil {
 		return nil, nil
 	}
-	ds := &meta.DataSource{}
-	err = json.Unmarshal(v, ds)
+	ds, err := meta.NewDataSource(v)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +68,9 @@ func ListDataSource(namespace string, name string) ([]*meta.DataSource, error) {
 	kvs, err := etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
-			ds := &meta.DataSource{}
-			err = json.Unmarshal(kv.Value, ds)
+			ds, err := meta.NewDataSource(kv.Value)
 			if err != nil {
-				break
+				continue
 			}
 			ds.Password = "********"
 			dses = append(dses, ds)
