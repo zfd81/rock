@@ -1,5 +1,9 @@
 package meta
 
+import (
+	"encoding/json"
+)
+
 type ParamType int
 
 const (
@@ -29,9 +33,17 @@ type Service struct {
 	Path      string       //服务请求路径
 	Method    string       //服务请求方法（GET,POST,PUT,DELETE）
 	Params    []*Parameter //服务请求参数
-	Script    string       //服务执行的脚本
+	Source    string       //服务执行的脚本
 }
 
 func (s *Service) AddParam(name string, dataType string) {
 	s.Params = append(s.Params, &Parameter{Name: name, DataType: dataType})
+}
+
+func NewService(jsonstr []byte) (*Service, error) {
+	serv := &Service{}
+	if err := json.Unmarshal(jsonstr, serv); err != nil {
+		return nil, err
+	}
+	return serv, nil
 }

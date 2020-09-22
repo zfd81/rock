@@ -8,8 +8,6 @@ import (
 
 	"github.com/zfd81/rock/errs"
 
-	"github.com/zfd81/rock/script/functions"
-
 	"github.com/spf13/cast"
 
 	"github.com/zfd81/rooster/util"
@@ -26,6 +24,7 @@ const (
 )
 
 type Context interface {
+	GetModule(path string) script.Module
 	GetDataSource(name string) script.DB
 }
 
@@ -84,6 +83,10 @@ func (r *ParrotResource) GetNamespace() string {
 		return meta.DefaultNamespace
 	}
 	return r.namespace
+}
+
+func (r *ParrotResource) SelectModule(path string) script.Module {
+	return r.context.GetModule(path)
 }
 
 func (r *ParrotResource) SelectDataSource(name string) script.DB {
@@ -165,19 +168,9 @@ func NewResource(serv *meta.Service) *ParrotResource {
 	if err != nil {
 		return nil
 	}
-	se := script.New()
-	se.SetScript(serv.Script)
-	se.AddFunc("_sys_log", functions.SysLog(res))
-	se.AddFunc("_sys_err", functions.SysError(res))
-	se.AddFunc("_resp_write", functions.RespWrite(res))
-	se.AddFunc("_http_get", functions.HttpGet)
-	se.AddFunc("_http_post", functions.HttpPost)
-	se.AddFunc("_http_delete", functions.HttpDelete)
-	se.AddFunc("_http_put", functions.HttpPut)
-	se.AddFunc("_db_query", functions.DBQuery(res))
-	se.AddFunc("_db_queryOne", functions.DBQueryOne(res))
-	se.AddFunc("_db_save", functions.DBSave(res))
-	se.AddFunc("_db_exec", functions.DBExec(res))
+	se := script.New(res)
+	se.SetScript(serv.Source)
+
 	res.se = se
 	res.method = strings.ToUpper(serv.Method)
 	res.regexPath = regexPath

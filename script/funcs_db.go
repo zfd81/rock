@@ -1,4 +1,4 @@
-package functions
+package script
 
 import (
 	"reflect"
@@ -6,12 +6,10 @@ import (
 
 	"github.com/zfd81/rock/errs"
 
-	"github.com/zfd81/rock/script"
-
 	"github.com/robertkrimen/otto"
 )
 
-func DBQuery(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func DBQuery(env Environment) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) (value otto.Value) {
 		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
 		db := env.SelectDataSource(name)                     //获取数据源DB
@@ -89,7 +87,7 @@ func DBQuery(env script.Environment) func(call otto.FunctionCall) otto.Value {
 	}
 }
 
-func DBQueryOne(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func DBQueryOne(env Environment) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) (value otto.Value) {
 		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
 		db := env.SelectDataSource(name)                     //获取数据源DB
@@ -135,7 +133,7 @@ func DBQueryOne(env script.Environment) func(call otto.FunctionCall) otto.Value 
 	}
 }
 
-func DBSave(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func DBSave(env Environment) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) (value otto.Value) {
 		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
 		db := env.SelectDataSource(name)                     //获取数据源DB
@@ -174,7 +172,7 @@ func DBSave(env script.Environment) func(call otto.FunctionCall) otto.Value {
 	}
 }
 
-func DBExec(env script.Environment) func(call otto.FunctionCall) otto.Value {
+func DBExec(env Environment) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) (value otto.Value) {
 		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
 		db := env.SelectDataSource(name)                     //获取数据源DB
@@ -221,18 +219,18 @@ func DBExec(env script.Environment) func(call otto.FunctionCall) otto.Value {
 }
 
 func Result(call otto.FunctionCall, data interface{}) (value otto.Value) {
-	result := &script.Result{
-		Code: 200,
-		Data: data,
+	result := &FuncResult{
+		StatusCode: 200,
+		Data:       data,
 	}
 	value, _ = call.Otto.ToValue(result)
 	return
 }
 
 func ErrorResult(call otto.FunctionCall, err string) (value otto.Value) {
-	result := &script.Result{
-		Code:    400,
-		Message: errs.ErrorStyleFunc(err),
+	result := &FuncResult{
+		StatusCode: 400,
+		Message:    errs.ErrorStyleFunc(err),
 	}
 	value, _ = call.Otto.ToValue(result)
 	return

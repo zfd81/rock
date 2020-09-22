@@ -10,4 +10,5 @@ const (
 	MethodConnect = "CONNECT"
 	MethodOptions = "OPTIONS"
 	MethodTrace   = "TRACE"
+	MethodLocal   = "LOCAL"
 )

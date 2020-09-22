@@ -1,4 +1,4 @@
-package functions
+package script
 
 import (
 	"log"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/robertkrimen/otto"
 	"github.com/zfd81/rock/http"
-	"github.com/zfd81/rock/script"
 )
 
 func HttpGet(call otto.FunctionCall) (value otto.Value) {
@@ -141,7 +140,7 @@ func HttpPut(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func RespWrite(process script.Process) func(call otto.FunctionCall) otto.Value {
+func RespWrite(process Processor) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		var data interface{}
 		var err error

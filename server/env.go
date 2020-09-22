@@ -40,6 +40,10 @@ type ResourceContext struct {
 	namespace string
 }
 
+func (c *ResourceContext) GetModule(path string) script.Module {
+	return SelectModule(c.namespace, path)
+}
+
 func (c *ResourceContext) GetDataSource(name string) script.DB {
 	return SelectDataSource(c.namespace, name)
 }
@@ -47,6 +51,7 @@ func (c *ResourceContext) GetDataSource(name string) script.DB {
 var (
 	config = conf.GetConfig()
 
+	modules   = map[string]script.Module{} //模块映射
 	resources = map[string]map[int][]Resource{
 		http.MethodGet:    map[int][]Resource{}, // GET资源映射
 		http.MethodPost:   map[int][]Resource{}, // POST资源映射
@@ -56,6 +61,36 @@ var (
 
 	dbs = map[string]*core.ParrotDB{}
 )
+
+func AddModule(module script.Module) {
+	key := meta.FormatPath(module.GetNamespace()) + meta.FormatPath(module.GetPath())
+	modules[key] = module
+}
+
+func RemoveModule(namespace string, path string) script.Module {
+	if namespace == "" {
+		namespace = meta.DefaultNamespace
+	}
+	key := meta.FormatPath(namespace) + meta.FormatPath(path)
+	value, found := modules[key]
+	if found {
+		delete(modules, key)
+		return value
+	}
+	return nil
+}
+
+func SelectModule(namespace string, path string) script.Module {
+	if namespace == "" {
+		namespace = meta.DefaultNamespace
+	}
+	key := meta.FormatPath(namespace) + meta.FormatPath(path)
+	value, found := modules[key]
+	if found {
+		return value
+	}
+	return nil
+}
 
 func GetResourceSet(method string, level int) []Resource {
 	value, found := resources[method][level]
@@ -130,15 +165,19 @@ func InitResources() error {
 	cnt := 0
 	if err == nil {
 		for _, kv := range kvs {
-			serv := &meta.Service{}
-			err = json.Unmarshal(kv.Value, serv)
+			serv, err := meta.NewService(kv.Value)
 			if err != nil {
 				log.Fatal(err)
 			}
-			res := core.NewResource(serv)
-			AddResource(res)
-			_, _, path := meta.ServicePath(string(kv.Key))
-			fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
+			if serv.Method == http.MethodLocal {
+				m := core.NewModule(serv)
+				AddModule(m)
+			} else {
+				res := core.NewResource(serv)
+				AddResource(res)
+				_, _, path := meta.ServicePath(string(kv.Key))
+				fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
+			}
 			cnt++
 		}
 		fmt.Printf("[INFO] A total of %d services were initialized \n", cnt)
@@ -213,16 +252,22 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 	if operType == etcd.CREATE {
 		switch {
 		case strings.HasPrefix(full_path, meta.ServiceDirectory):
-			serv := &meta.Service{}
-			err := json.Unmarshal(value, serv)
+			serv, err := meta.NewService(value)
 			if err != nil {
 				log.Fatal(err)
 				return
 			}
-			res := core.NewResource(serv)
-			AddResource(res)
-			_, _, path := meta.ServicePath(string(key))
-			fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
+			if serv.Method == http.MethodLocal {
+				m := core.NewModule(serv)
+				AddModule(m)
+				_, _, path := meta.ServicePath(string(key))
+				fmt.Printf("[INFO] Module %s: created successfully \n", path)
+			} else {
+				res := core.NewResource(serv)
+				AddResource(res)
+				_, _, path := meta.ServicePath(string(key))
+				fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
+			}
 			break
 		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
 			ds := &meta.DataSource{}
@@ -241,17 +286,25 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 	} else if operType == etcd.MODIFY {
 		switch {
 		case strings.HasPrefix(full_path, meta.ServiceDirectory):
-			serv := &meta.Service{}
-			err := json.Unmarshal(value, serv)
+			serv, err := meta.NewService(value)
 			if err != nil {
 				log.Fatal(err)
 				return
 			}
-			res := core.NewResource(serv)
-			RemoveResource(serv.Method, serv.Path)
-			AddResource(res)
-			_, _, path := meta.ServicePath(string(key))
-			fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
+			if serv.Method == http.MethodLocal {
+				m := core.NewModule(serv)
+				RemoveModule(serv.Namespace, serv.Path)
+				AddModule(m)
+				_, _, path := meta.ServicePath(string(key))
+				fmt.Printf("[INFO] Module %s: modified successfully \n", path)
+			} else {
+				res := core.NewResource(serv)
+				RemoveResource(serv.Method, serv.Path)
+				AddResource(res)
+				_, _, path := meta.ServicePath(string(key))
+				fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
+			}
+
 			break
 		}
 	} else if operType == etcd.DELETE {

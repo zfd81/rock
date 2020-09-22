@@ -31,15 +31,13 @@ func TestAnalysis(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	definition, code := SplitSource(p.GetString("source"))
-	serv := &meta.Service{}
-	err = wrapService(definition, serv)
+	source := p.GetString("source")
+	serv, err := SourceAnalysis(source)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	serv.Name = p.GetString("name")
-	serv.Script = code
 	c.JSON(http.StatusOK, serv)
 }
 
@@ -49,15 +47,15 @@ func Test(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	definition, code := SplitSource(p.GetString("source"))
-	serv := &meta.Service{}
-	err = wrapService(definition, serv)
+	source := p.GetString("source")
+	_, code := SplitSource(source)
+	serv, err := SourceAnalysis(source)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	serv.Name = p.GetString("name")
-	serv.Script = code
+	serv.Source = code
 	res := core.NewResource(serv)
 	ps, found := p.Get("params")
 	if found {
@@ -110,15 +108,13 @@ func CreateService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	definition, code := SplitSource(p.GetString("source"))
-	serv := &meta.Service{}
-	err = wrapService(definition, serv)
+	serv, err := SourceAnalysis(p.GetString("source"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	serv.Name = p.GetString("name")
-	serv.Script = code
+	serv.Source = p.GetString("source")
 	err = dai.CreateService(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
@@ -162,14 +158,12 @@ func ModifyService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	definition, code := SplitSource(p.GetString("source"))
-	serv := &meta.Service{}
-	err = wrapService(definition, serv)
+	serv, err := SourceAnalysis(p.GetString("source"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	serv.Script = code
+	serv.Source = p.GetString("source")
 	err = dai.ModifyService(serv)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
@@ -354,7 +348,7 @@ func wrapService(definition string, serv *meta.Service) error {
 	if definition == "" {
 		return errs.New(errs.ErrParamBad, "Missing service definition")
 	}
-	se := script.New()
+	se := script.New(nil)
 	se.SetScript(definition)
 	se.Run()
 	data, err := se.GetVar("__serv_definition")
@@ -395,4 +389,78 @@ func wrapService(definition string, serv *meta.Service) error {
 		}
 	}
 	return nil
+}
+
+func SourceAnalysis(source string) (*meta.Service, error) {
+	definition, code := SplitSource(source)
+	serv := &meta.Service{}
+	se := script.New(nil)
+	var namespace string
+	var path string
+	var method string
+	if definition != "" {
+		se.SetScript(definition)
+		se.Run()
+		data, err := se.GetVar("__serv_definition")
+		if err != nil {
+			return nil, errs.New(errs.ErrParamBad, "Service definition error")
+		}
+		val, ok := data.(map[string]interface{})
+		if !ok {
+			return nil, errs.New(errs.ErrParamBad, "Service definition error")
+		}
+		namespace = cast.ToString(val["namespace"])
+		path = cast.ToString(val["path"])
+		if path == "" {
+			return nil, errs.New(errs.ErrParamBad, "Service path not found")
+		}
+		method = cast.ToString(val["method"])
+		if method == "" {
+			return nil, errs.New(errs.ErrParamBad, "Service method not found")
+		}
+		m := strings.ToUpper(method)
+		if m != http.MethodGet && m != http.MethodPost &&
+			m != http.MethodPut && m != http.MethodDelete {
+			return nil, errs.New(errs.ErrParamBad, "Service method["+method+"] error")
+		}
+		params := val["params"]
+		if params != nil {
+			ps, ok := params.([]map[string]interface{})
+			if !ok {
+				return nil, errs.New(errs.ErrParamBad, "Service parameter definition error")
+			}
+			for _, param := range ps {
+				serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]))
+			}
+		}
+	} else {
+		se.AddScript("var module={};")
+		se.AddScript(code)
+		err := se.Run()
+		if err != nil {
+			return nil, err
+		}
+		value, err := se.GetVar("module")
+		if err != nil {
+			return nil, err
+		}
+		module, ok := value.(map[string]interface{})
+		if ok {
+			value = module["exports"]
+			exports, ok := value.(map[string]interface{})
+			if !ok {
+				return nil, errs.New(errs.ErrParamBad, "Module definition error")
+			}
+			namespace = cast.ToString(exports["namespace"])
+			path = cast.ToString(exports["path"])
+			if path == "" {
+				return nil, errs.New(errs.ErrParamBad, "Module path not found")
+			}
+			method = "LOCAL"
+		}
+	}
+	serv.Namespace = namespace
+	serv.Path = path
+	serv.Method = method
+	return serv, nil
 }

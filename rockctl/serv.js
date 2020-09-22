@@ -4,6 +4,11 @@ $.define({
     method: "get"
 })
 
+var util = require("comm/util")
+$.log(util.add(2,3))
+$.log(util.left("helloworld",3))
+$.log(util.right("helloworld",3))
+util.print("hello world!!!")
 $.post("http://localhost:8080/login", {
     name: name,
     password: password

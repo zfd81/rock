@@ -21,15 +21,24 @@ type ScriptEngine interface {
 
 type Environment interface {
 	GetNamespace() string
+	SelectModule(path string) Module
 	SelectDataSource(name string) DB
 }
 
-type Process interface {
+type Processor interface {
+	Environment
 	Println(args ...interface{}) error
 	Perror(args ...interface{}) error
 	SetRespStatus(code int)
 	AddRespHeader(name string, value interface{})
 	SetRespData(data interface{})
+}
+
+type Module interface {
+	GetNamespace() string
+	GetPath() string
+	GetName() string
+	GetSource() string
 }
 
 type DB interface {
@@ -41,8 +50,9 @@ type DB interface {
 	BatchSave(arg []interface{}, table ...string) (int64, error)
 }
 
-type Result struct {
-	Code    int         `json:"code"`
-	Data    interface{} `json:"data"`
-	Message string      `json:"msg"`
+type FuncResult struct {
+	Status     bool        `json:"status"`
+	StatusCode int         `json:"code"`
+	Data       interface{} `json:"data"`
+	Message    string      `json:"msg"`
 }

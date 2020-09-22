@@ -15,9 +15,10 @@ var (
 )
 
 type JavaScriptImpl struct {
-	vm     *otto.Otto
-	sdk    string
-	buffer *bytes.Buffer
+	vm        *otto.Otto
+	sdk       string
+	script    *bytes.Buffer
+	processor Processor
 }
 
 func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
@@ -52,26 +53,40 @@ func (se *JavaScriptImpl) AddFunc(name string, function Function) error {
 }
 
 func (se *JavaScriptImpl) SetScript(src string) {
-	se.buffer.Reset()
-	se.buffer.WriteString(se.sdk)
-	se.buffer.WriteString(src)
+	se.script.Reset()
+	se.script.WriteString(se.sdk)
+	se.script.WriteString(src)
 }
 
 func (se *JavaScriptImpl) AddScript(src string) {
-	se.buffer.WriteString(src)
+	se.script.WriteString(src)
 }
 
 func (se *JavaScriptImpl) Run() (err error) {
-	_, err = se.vm.Run(se.buffer.String())
+	_, err = se.vm.Run(se.script.String())
 	return
 }
 
-func New() ScriptEngine {
-	return &JavaScriptImpl{
-		vm:     otto.New(),
-		sdk:    string(sdkSource),
-		buffer: bytes.NewBuffer(sdkSource),
+func New(processor Processor) ScriptEngine {
+	se := &JavaScriptImpl{
+		vm:        otto.New(),
+		sdk:       string(sdkSource),
+		script:    bytes.NewBufferString(""),
+		processor: processor,
 	}
+	se.AddFunc("_http_get", HttpGet)
+	se.AddFunc("_http_post", HttpPost)
+	se.AddFunc("_http_delete", HttpDelete)
+	se.AddFunc("_http_put", HttpPut)
+	se.AddFunc("_sys_log", SysLog(se.processor))
+	se.AddFunc("_sys_err", SysError(se.processor))
+	se.AddFunc("require", SysRequire(se.processor))
+	se.AddFunc("_resp_write", RespWrite(se.processor))
+	se.AddFunc("_db_query", DBQuery(se.processor))
+	se.AddFunc("_db_queryOne", DBQueryOne(se.processor))
+	se.AddFunc("_db_save", DBSave(se.processor))
+	se.AddFunc("_db_exec", DBExec(se.processor))
+	return se
 }
 
 func init() {
