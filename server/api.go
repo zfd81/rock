@@ -244,7 +244,11 @@ func CreateDataSource(c *gin.Context) {
 func DeleteDataSource(c *gin.Context) {
 	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
 	name := c.Param("name")
-	err := dai.DeleteDataSource(namespace, name)
+	ds := &meta.DataSource{
+		Namespace: namespace,
+		Name:      name,
+	}
+	err := dai.DeleteDataSource(ds)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
@@ -299,7 +303,7 @@ func FindDataSource(c *gin.Context) {
 
 func ListDataSource(c *gin.Context) {
 	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
-	dses, err := dai.ListDataSource(namespace, "/")
+	dses, err := dai.ListDataSource(namespace, "")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 999,
