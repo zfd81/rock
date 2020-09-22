@@ -40,6 +40,18 @@ func (s *Service) AddParam(name string, dataType string) {
 	s.Params = append(s.Params, &Parameter{Name: name, DataType: dataType})
 }
 
+func (s *Service) Key() string {
+	return ServiceKey(s.Namespace, s.Method, s.Path)
+}
+
+func (s *Service) String() (string, error) {
+	bytes, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
 func NewService(jsonstr []byte) (*Service, error) {
 	serv := &Service{}
 	if err := json.Unmarshal(jsonstr, serv); err != nil {

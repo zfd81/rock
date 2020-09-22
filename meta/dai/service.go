@@ -1,23 +1,17 @@
 package dai
 
 import (
-	"encoding/json"
-
 	"github.com/zfd81/rock/errs"
 	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rock/util/etcd"
 )
 
-/**
-* 服务的key是: /parrot/serv/服务路径.请求方法
-**/
-
 func CreateService(serv *meta.Service) error {
-	data, err := json.Marshal(serv)
+	jsonstr, err := serv.String()
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
+	key := serv.Key()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -25,21 +19,21 @@ func CreateService(serv *meta.Service) error {
 	if v != nil {
 		return errs.New(errs.ErrServExists)
 	}
-	_, err = etcd.Put(key, string(data))
+	_, err = etcd.Put(key, jsonstr)
 	return err
 }
 
-func DeleteService(serv *meta.Service) (err error) {
-	_, err = etcd.Del(meta.ServiceKey(serv.Namespace, serv.Method, serv.Path))
-	return
+func DeleteService(serv *meta.Service) error {
+	_, err := etcd.Del(serv.Key())
+	return err
 }
 
 func ModifyService(serv *meta.Service) error {
-	data, err := json.Marshal(serv)
+	jsonstr, err := serv.String()
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := meta.ServiceKey(serv.Namespace, serv.Method, serv.Path)
+	key := serv.Key()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -47,20 +41,20 @@ func ModifyService(serv *meta.Service) error {
 	if v == nil {
 		return errs.New(errs.ErrServNotExist)
 	}
-	_, err = etcd.Put(key, string(data))
+	_, err = etcd.Put(key, jsonstr)
 	return err
 }
 
 func GetService(namespace string, method string, path string) (*meta.Service, error) {
-	v, err := etcd.Get(meta.ServiceKey(namespace, method, path))
+	key := meta.ServiceKey(namespace, method, path)
+	v, err := etcd.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	if v == nil {
 		return nil, nil
 	}
-	serv := &meta.Service{}
-	err = json.Unmarshal(v, serv)
+	serv, err := meta.NewService(v)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +69,9 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	kvs, err := etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
-			serv := &meta.Service{}
-			err = json.Unmarshal(kv.Value, serv)
+			serv, err := meta.NewService(kv.Value)
 			if err != nil {
-				break
+				continue
 			}
 			servs = append(servs, serv)
 		}
@@ -89,10 +82,9 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
-			serv := &meta.Service{}
-			err = json.Unmarshal(kv.Value, serv)
+			serv, err := meta.NewService(kv.Value)
 			if err != nil {
-				break
+				continue
 			}
 			servs = append(servs, serv)
 		}
@@ -103,10 +95,9 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
-			serv := &meta.Service{}
-			err = json.Unmarshal(kv.Value, serv)
+			serv, err := meta.NewService(kv.Value)
 			if err != nil {
-				break
+				continue
 			}
 			servs = append(servs, serv)
 		}
@@ -117,10 +108,9 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
-			serv := &meta.Service{}
-			err = json.Unmarshal(kv.Value, serv)
+			serv, err := meta.NewService(kv.Value)
 			if err != nil {
-				break
+				continue
 			}
 			servs = append(servs, serv)
 		}
