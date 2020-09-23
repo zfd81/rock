@@ -2,6 +2,7 @@ package conf
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -104,8 +105,10 @@ var defaultConf = Config{
 var globalConf = defaultConf
 
 func init() {
+	ROCK_HOME := os.Getenv("ROCK_HOME") //获取环境变量值
 	viper.SetConfigName(ConfigName)
 	viper.AddConfigPath(ConfigPath)
+	viper.AddConfigPath(ROCK_HOME)
 	viper.SetConfigType(ConfigType)
 	if err := viper.ReadInConfig(); err == nil {
 		err = viper.Unmarshal(&globalConf)
