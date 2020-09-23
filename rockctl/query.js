@@ -12,6 +12,7 @@ db.query("select * from das_sys_user")
         for (i = 0, len = data.length; i < len; i++) {
             $.log(data[i].name)
         }
+        $.resp.write(data)
     })
     .catch(function (error) {
         $.log(error)
@@ -75,6 +76,7 @@ db.query("select * from das_sys_user where name like CONCAT('%',:val)","%dm%")
         for (i = 0, len = data.length; i < len; i++) {
             $.log(data[i].name)
         }
+
     })
     .catch(function (error) {
         $.log(error)

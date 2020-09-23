@@ -1,11 +1,12 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/zfd81/rock/errs"
 
 	"github.com/zfd81/rock/script"
 
@@ -224,33 +225,32 @@ func SelectDataSource(namespace string, name string) *core.ParrotDB {
 	return dbs[key]
 }
 
-func InitDbs() error {
-	namespace := meta.DefaultNamespace
-	if len(config.Namespaces) > 0 {
-		namespace = config.Namespaces[0]
-	}
-	kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath() + meta.FormatPath(namespace))
+func InitDbs() {
+	namespaces := config.Namespaces
+	namespaces = append(namespaces, meta.DefaultNamespace)
 	cnt := 0
 	ecnt := 0
-	if err == nil {
+	for _, namespace := range namespaces {
+		kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath() + meta.FormatPath(namespace))
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
 		for _, kv := range kvs {
-			ds := &meta.DataSource{}
-			err = json.Unmarshal(kv.Value, ds)
+			ds, err := meta.NewDataSource(kv.Value)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err.Error())
 			}
 			err = AddDataSource(ds)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Printf("[ERROR] %s \n", errs.ErrorStyleFunc("DataSource "+ds.Namespace+":"+ds.Name+" initialized failed: "+err.Error()))
 				ecnt++
 			} else {
 				fmt.Printf("[INFO] DataSource %s:%s initialized successfully \n", ds.Namespace, ds.Name)
 				cnt++
 			}
 		}
-		fmt.Printf("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
 	}
-	return err
+	fmt.Printf("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
 }
 
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
@@ -260,30 +260,28 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 		case strings.HasPrefix(full_path, meta.ServiceDirectory):
 			serv, err := meta.NewService(value)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 				return
 			}
+			namespace, _, path := meta.ServicePath(string(key))
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				AddModule(m)
-				_, _, path := meta.ServicePath(string(key))
-				fmt.Printf("[INFO] Module %s: created successfully \n", path)
+				fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
 			} else {
 				res := core.NewResource(serv)
 				AddResource(res)
-				_, _, path := meta.ServicePath(string(key))
-				fmt.Printf("[INFO] Service %s:%s created successfully \n", res.GetMethod(), path)
+				fmt.Printf("[INFO] Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), path)
 			}
 			break
 		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
-			ds := &meta.DataSource{}
-			err := json.Unmarshal(value, ds)
+			ds, err := meta.NewDataSource(value)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalln(err)
 			}
 			err = AddDataSource(ds)
 			if err != nil {
-				fmt.Printf("[ERROR] DataSource %s:%s created failed: %s \n", ds.Namespace, ds.Name, err)
+				fmt.Printf("[ERROR] %s \n", errs.ErrorStyleFunc("DataSource "+ds.Namespace+":"+ds.Name+" created failed: "+err.Error()))
 			} else {
 				fmt.Printf("[INFO] DataSource %s:%s created successfully \n", ds.Namespace, ds.Name)
 			}
@@ -310,21 +308,27 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				_, _, path := meta.ServicePath(string(key))
 				fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
 			}
-
 			break
 		}
 	} else if operType == etcd.DELETE {
 		switch {
 		case strings.HasPrefix(full_path, meta.ServiceDirectory):
-			_, method, path := meta.ServicePath(string(key))
-			RemoveResource(method, path)
-			fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.ToUpper(method), path)
+			namespace, method, path := meta.ServicePath(string(key))
+			if strings.ToUpper(method) == http.MethodLocal {
+				module := RemoveModule(namespace, path)
+				if module != nil {
+					fmt.Printf("[INFO] Module %s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
+				}
+			} else {
+				RemoveResource(method, path)
+				fmt.Printf("[INFO] Service %s:%s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), strings.ToUpper(method), path)
+			}
 			break
 		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
 			namespace, name := meta.DataSourcePath(string(key))
 			db := RemoveDataSource(namespace, name)
 			if db != nil {
-				fmt.Printf("[INFO] Service %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace, "", 1), db.Name)
+				fmt.Printf("[INFO] DataSource %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace, "", 1), db.Name)
 			}
 			break
 		}

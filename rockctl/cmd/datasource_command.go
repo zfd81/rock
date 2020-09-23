@@ -24,7 +24,6 @@ func NewDataSourceCommand() *cobra.Command {
 	}
 	ac.AddCommand(newDataSourceAddCommand())
 	ac.AddCommand(newDataSourceDeleteCommand())
-	ac.AddCommand(newDataSourceChangeCommand())
 	ac.AddCommand(newDataSourceGetCommand())
 	ac.AddCommand(newDataSourceListCommand())
 	return ac
@@ -45,15 +44,6 @@ func newDataSourceDeleteCommand() *cobra.Command {
 		Short: "Deletes a datasource",
 		Run:   dsDeleteCommandFunc,
 	}
-}
-
-func newDataSourceChangeCommand() *cobra.Command {
-	cmd := cobra.Command{
-		Use:   "change <file>",
-		Short: "Changes a datasource",
-		Run:   dsChangeCommandFunc,
-	}
-	return &cmd
 }
 
 func newDataSourceGetCommand() *cobra.Command {
@@ -210,41 +200,6 @@ func dsListCommandFunc(cmd *cobra.Command, args []string) {
 				fmt.Println("-----------------------------------------------------------------------------------------")
 			}
 		}
-	} else {
-		Printerr(response.Message)
-	}
-}
-
-func dsChangeCommandFunc(cmd *cobra.Command, args []string) {
-	if len(args) < 1 {
-		ExitWithError(ExitBadArgs, fmt.Errorf("ds change command requires datasource file as its argument"))
-	}
-	path := args[0]
-	info, err := os.Stat(path)
-	if err != nil || info.IsDir() {
-		prompt := fmt.Sprintf("open %s: No such file", path)
-		Printerr(prompt)
-		return
-	}
-	yamlFile, err := ioutil.ReadFile(path)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	ds := &meta.DataSource{}
-	err = yaml.Unmarshal(yamlFile, ds)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	resp, err := client.Put(url("ds"), ds, nil)
-	response, err := wrapResponse(resp.Content)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	if response.StatusCode == 200 {
-		Print(response.Message)
 	} else {
 		Printerr(response.Message)
 	}

@@ -22,7 +22,7 @@ var $ = {
     DBPromise: {
         create: function (result) {
             var promise = {
-                status: result["Code"] == 200,
+                status: result["StatusCode"] == 200,
                 then: function (func) {
                     if (this.status) {
                         func(result["Data"]);

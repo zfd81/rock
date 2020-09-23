@@ -77,6 +77,7 @@ var defaultConf = Config{
 	Banner:       banner1,
 	Port:         8081,
 	ServiceName:  "/",
+	Namespaces:   []string{},
 	Directory:    "/rock",
 	ReadTimeout:  10,
 	WriteTimeout: 15,
