@@ -165,8 +165,13 @@ func dsGetCommandFunc(cmd *cobra.Command, args []string) {
 		if data != nil {
 			fmt.Printf("DataSource[%s] details:\n", name)
 			ds := data.(map[string]interface{})
-			fmt.Printf("%12s %15s %15s %15s %8s %8s %10s\n", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
-			fmt.Printf("%12s %15s %15s %15s %8s %8s %10s\n", ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
+			fmt.Println("-----------------------------------------------------------------------------------------")
+			fmt.Printf("%12s %12s %15s %15s %8s %9s %10s\n", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
+			fmt.Println("-----------------------------------------------------------------------------------------")
+			fmt.Printf("%12s %12s %15s %15s %8s %9s %10s\n", ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
+			fmt.Println("-----------------------------------------------------------------------------------------")
+		} else {
+			Printerr("DataSource " + name + " not found")
 		}
 	} else {
 		Printerr(response.Message)
@@ -195,11 +200,14 @@ func dsListCommandFunc(cmd *cobra.Command, args []string) {
 			dses, ok := data.([]interface{})
 			if ok {
 				fmt.Println("DataSource list:")
-				fmt.Printf("%2s %12s %15s %15s %15s %8s %8s %10s\n", "", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
+				fmt.Println("-----------------------------------------------------------------------------------------")
+				fmt.Printf("%2s %12s %15s %10s %15s %8s %8s %10s\n", "", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
+				fmt.Println("-----------------------------------------------------------------------------------------")
 				for i, v := range dses {
 					ds := v.(map[string]interface{})
-					fmt.Printf("%2d %12s %15s %15s %15s %8s %8s %10s\n", i, ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
+					fmt.Printf("%2d %12s %15s %10s %15s %8s %8s %10s\n", i, ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
 				}
+				fmt.Println("-----------------------------------------------------------------------------------------")
 			}
 		}
 	} else {
