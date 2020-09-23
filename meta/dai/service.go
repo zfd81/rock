@@ -20,12 +20,18 @@ func CreateService(serv *meta.Service) error {
 		return errs.New(errs.ErrServExists)
 	}
 	_, err = etcd.Put(key, jsonstr)
-	return err
+	if err != nil {
+		return errs.NewError(err)
+	}
+	return nil
 }
 
 func DeleteService(serv *meta.Service) error {
 	_, err := etcd.Del(serv.Key())
-	return err
+	if err != nil {
+		return errs.NewError(err)
+	}
+	return nil
 }
 
 func ModifyService(serv *meta.Service) error {
@@ -42,7 +48,10 @@ func ModifyService(serv *meta.Service) error {
 		return errs.New(errs.ErrServNotExist)
 	}
 	_, err = etcd.Put(key, jsonstr)
-	return err
+	if err != nil {
+		return errs.NewError(err)
+	}
+	return nil
 }
 
 func GetService(namespace string, method string, path string) (*meta.Service, error) {

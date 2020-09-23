@@ -168,7 +168,7 @@ func NewResource(serv *meta.Service) *ParrotResource {
 	if err != nil {
 		return nil
 	}
-	se := script.New(res)
+	se := script.NewWithProcessor(res)
 	se.SetScript(serv.Source)
 
 	res.se = se

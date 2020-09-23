@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -79,12 +76,13 @@ func servAddCommandFunc(cmd *cobra.Command, args []string) {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		prompt := fmt.Sprintf("open %s: No such file", path)
-		log.Println(prompt)
+		Printerr(prompt)
 		return
 	}
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
 	param := map[string]interface{}{
 		"name":   info.Name(),
@@ -92,16 +90,18 @@ func servAddCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Post(url("serv"), "application/json;charset=UTF-8", param, nil)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }
 
@@ -118,16 +118,18 @@ func servDeleteCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Delete(url(fmt.Sprintf("serv/method/%s%s", method, meta.FormatPath(path))), nil, header)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }
 
@@ -144,17 +146,29 @@ func servGetCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Get(url(fmt.Sprintf("serv/method/%s%s", method, meta.FormatPath(path))), nil, header)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		content := resp.Content
-		var out bytes.Buffer
-		err = json.Indent(&out, []byte(content), "", "  ")
-		if err != nil {
-			fmt.Println(resp.Content)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		data := response.Data
+		if data != nil {
+			fmt.Printf("Service[%s] details:\n", path)
+			serv := data.(map[string]interface{})
+			fmt.Println("--------------------------------------------------------------------")
+			fmt.Printf("%37s %12s %15s\n", "Path", "Method", "Namespace")
+			fmt.Println("--------------------------------------------------------------------")
+			fmt.Printf("%37s %12s %15s\n", serv["Path"], serv["Method"], serv["Namespace"])
+			fmt.Println("--------------------------------------------------------------------")
 		} else {
-			fmt.Println(fmt.Sprintf("[INFO] Service %s details:", path))
-			fmt.Println(out.String())
+			Printerr("Service " + path + " not found")
 		}
+	} else {
+		Printerr(response.Message)
 	}
 }
 
@@ -177,18 +191,32 @@ func servListCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Get(url(fmt.Sprintf("serv/list%s", meta.FormatPath(path))), nil, header)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		var data []string
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] Service list:")
-			for _, v := range data {
-				fmt.Printf("[INFO] %s \n", v)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		data := response.Data
+		if data != nil {
+			servs, ok := data.([]interface{})
+			if ok {
+				fmt.Println("Service list:")
+				fmt.Println("-----------------------------------------------------------------------")
+				fmt.Printf("%2s %37s %12s %15s\n", "", "Path", "Method", "Namespace")
+				fmt.Println("-----------------------------------------------------------------------")
+				for i, v := range servs {
+					serv := v.(map[string]interface{})
+					fmt.Printf("%2d %37s %12s %15s\n", i, serv["Path"], serv["Method"], serv["Namespace"])
+				}
+				fmt.Println("-----------------------------------------------------------------------")
 			}
 		}
+	} else {
+		Printerr(response.Message)
 	}
 }
 
@@ -201,28 +229,27 @@ func servChangeCommandFunc(cmd *cobra.Command, args []string) {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		prompt := fmt.Sprintf("open %s: No such file", path)
-		log.Println(prompt)
+		Printerr(prompt)
 		return
 	}
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
 	param := map[string]interface{}{
 		"name":   info.Name(),
 		"source": string(source),
 	}
 	resp, err := client.Put(url("serv"), param, nil)
+	response, err := wrapResponse(resp.Content)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }

@@ -67,13 +67,17 @@ func (se *JavaScriptImpl) Run() (err error) {
 	return
 }
 
-func New(processor Processor) ScriptEngine {
-	se := &JavaScriptImpl{
-		vm:        otto.New(),
-		sdk:       string(sdkSource),
-		script:    bytes.NewBufferString(""),
-		processor: processor,
+func New() *JavaScriptImpl {
+	return &JavaScriptImpl{
+		vm:     otto.New(),
+		sdk:    string(sdkSource),
+		script: bytes.NewBufferString(""),
 	}
+}
+
+func NewWithProcessor(processor Processor) *JavaScriptImpl {
+	se := New()
+	se.processor = processor
 	se.AddFunc("_http_get", HttpGet)
 	se.AddFunc("_http_post", HttpPost)
 	se.AddFunc("_http_delete", HttpDelete)

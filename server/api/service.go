@@ -39,14 +39,16 @@ func Test(c *gin.Context) {
 		return
 	}
 	source := p.GetString("source")
-	_, code := SplitSource(source)
 	serv, err := SourceAnalysis(source)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	serv.Name = p.GetString("name")
-	serv.Source = code
+	serv.Source = source
+	if serv.Method == "LOCAL" {
+
+	}
 	res := core.NewResource(serv)
 	ps, found := p.Get("params")
 	if found {
@@ -109,23 +111,23 @@ func CreateService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"msg": fmt.Sprintf("Service %s created successfully", serv.Path),
+	c.JSON(http.StatusOK, ApiResponse{
+		StatusCode: 200,
+		Message:    fmt.Sprintf("Service %s created successfully", serv.Path),
 	})
 }
 
 func DeleteService(c *gin.Context) {
 	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
-	method := c.Param("method")
+	method := c.Param("method")                    //从Path中获得方法
 	m := strings.ToUpper(method)
-	if m != http.MethodGet &&
-		m != http.MethodPost &&
-		m != http.MethodPut &&
-		m != http.MethodDelete {
+	if m != http.MethodGet && m != http.MethodPost &&
+		m != http.MethodPut && m != http.MethodDelete &&
+		m != "LOCAL" {
 		c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "Method "+method+" not found"))
 		return
 	}
-	path := c.Param("path")
+	path := c.Param("path") //从Path中获得服务的访问路径
 	serv := &meta.Service{
 		Namespace: namespace,
 		Method:    method,
@@ -136,8 +138,9 @@ func DeleteService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"msg": fmt.Sprintf("Service %s deleted successfully", serv.Path),
+	c.JSON(http.StatusOK, ApiResponse{
+		StatusCode: 200,
+		Message:    fmt.Sprintf("Service %s deleted successfully", serv.Path),
 	})
 }
 
@@ -158,29 +161,35 @@ func ModifyService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"msg": fmt.Sprintf("Service %s modified successfully", serv.Path),
+	c.JSON(http.StatusOK, ApiResponse{
+		StatusCode: 200,
+		Message:    fmt.Sprintf("Service %s modified successfully", serv.Path),
 	})
 }
 
 func FindService(c *gin.Context) {
 	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
-	method := c.Param("method")
+	method := c.Param("method")                    //从Path中获得方法
 	m := strings.ToUpper(method)
-	if m != http.MethodGet &&
-		m != http.MethodPost &&
-		m != http.MethodPut &&
-		m != http.MethodDelete {
+	if m != http.MethodGet && m != http.MethodPost &&
+		m != http.MethodPut && m != http.MethodDelete &&
+		m != "LOCAL" {
 		c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "Method "+method+" not found"))
 		return
 	}
-	path := c.Param("path")
+	path := c.Param("path") //从Path中获得服务的访问路径
 	serv, err := dai.GetService(namespace, m, path)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-	c.JSON(http.StatusOK, serv)
+	if serv != nil {
+		serv.Source = ""
+	}
+	c.JSON(http.StatusOK, ApiResponse{
+		StatusCode: 200,
+		Data:       serv,
+	})
 }
 
 func ListService(c *gin.Context) {
@@ -191,87 +200,39 @@ func ListService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errs.NewError(err))
 		return
 	}
-
-	paths := make([]string, 0, 50)
 	for _, serv := range servs {
-		paths = append(paths, strings.ToUpper(serv.Method)+":"+serv.Path)
+		serv.Source = ""
 	}
-
-	c.JSON(http.StatusOK, paths)
-}
-
-func SplitSource(source string) (string, string) {
-	start := strings.Index(source, "$.define(")
-	if start == -1 {
-		return "", source
-	}
-	end := strings.Index(source[start:], "})")
-	if end == -1 {
-		return "", source
-	}
-	return source[start : end+3], source[end+3:]
-}
-
-func wrapService(definition string, serv *meta.Service) error {
-	if definition == "" {
-		return errs.New(errs.ErrParamBad, "Missing service definition")
-	}
-	se := script.New(nil)
-	se.SetScript(definition)
-	se.Run()
-	data, err := se.GetVar("__serv_definition")
-	if err != nil {
-		return errs.New(errs.ErrParamBad, "Service definition error")
-	}
-	val, ok := data.(map[string]interface{})
-	if !ok {
-		return errs.New(errs.ErrParamBad, "Service definition error")
-	}
-	namespace := cast.ToString(val["namespace"])
-	path := cast.ToString(val["path"])
-	if path == "" {
-		return errs.New(errs.ErrParamBad, "Service path not found")
-	}
-	method := cast.ToString(val["method"])
-	if method == "" {
-		return errs.New(errs.ErrParamBad, "Service method not found")
-	}
-	m := strings.ToUpper(method)
-	if m != http.MethodGet &&
-		m != http.MethodPost &&
-		m != http.MethodPut &&
-		m != http.MethodDelete {
-		return errs.New(errs.ErrParamBad, "Service method["+method+"] error")
-	}
-	params := val["params"]
-	serv.Namespace = namespace
-	serv.Path = path
-	serv.Method = method
-	if params != nil {
-		ps, ok := params.([]map[string]interface{})
-		if !ok {
-			return errs.New(errs.ErrParamBad, "Service parameter definition error")
-		}
-		for _, param := range ps {
-			serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]))
-		}
-	}
-	return nil
+	c.JSON(http.StatusOK, ApiResponse{
+		StatusCode: 200,
+		Data:       servs,
+	})
 }
 
 func SourceAnalysis(source string) (*meta.Service, error) {
-	definition, code := SplitSource(source)
-	serv := &meta.Service{}
-	se := script.New(nil)
+	var definition string
+	start := strings.Index(source, "$.define(")
+	if start != -1 {
+		end := strings.Index(source[start:], "})")
+		if end == -1 {
+			return nil, errs.New(errs.ErrParamBad, "Service definition error")
+		}
+		definition = source[start : end+3]
+	}
 	var namespace string
 	var path string
 	var method string
+	serv := &meta.Service{}
+	se := script.New()
 	if definition != "" {
 		se.SetScript(definition)
-		se.Run()
+		err := se.Run()
+		if err != nil {
+			return nil, errs.New(errs.ErrParamBad, "Service definition error:"+err.Error())
+		}
 		data, err := se.GetVar("__serv_definition")
 		if err != nil {
-			return nil, errs.New(errs.ErrParamBad, "Service definition error")
+			return nil, errs.New(errs.ErrParamBad, "Service definition error:"+err.Error())
 		}
 		val, ok := data.(map[string]interface{})
 		if !ok {
@@ -295,7 +256,7 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 		if params != nil {
 			ps, ok := params.([]map[string]interface{})
 			if !ok {
-				return nil, errs.New(errs.ErrParamBad, "Service parameter definition error")
+				return nil, errs.New(errs.ErrParamBad, "Service parameters definition error")
 			}
 			for _, param := range ps {
 				serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]))
@@ -303,29 +264,30 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 		}
 	} else {
 		se.AddScript("var module={};")
-		se.AddScript(code)
+		se.AddScript(source)
 		err := se.Run()
 		if err != nil {
-			return nil, err
+			return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
 		}
 		value, err := se.GetVar("module")
 		if err != nil {
-			return nil, err
+			return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
 		}
 		module, ok := value.(map[string]interface{})
-		if ok {
-			value = module["exports"]
-			exports, ok := value.(map[string]interface{})
-			if !ok {
-				return nil, errs.New(errs.ErrParamBad, "Module definition error")
-			}
-			namespace = cast.ToString(exports["namespace"])
-			path = cast.ToString(exports["path"])
-			if path == "" {
-				return nil, errs.New(errs.ErrParamBad, "Module path not found")
-			}
-			method = "LOCAL"
+		if !ok {
+			return nil, errs.New(errs.ErrParamBad, "Module definition error")
 		}
+		value = module["exports"]
+		exports, ok := value.(map[string]interface{})
+		if !ok {
+			return nil, errs.New(errs.ErrParamBad, "Module definition error")
+		}
+		namespace = cast.ToString(exports["namespace"])
+		path = cast.ToString(exports["path"])
+		if path == "" {
+			return nil, errs.New(errs.ErrParamBad, "Module path not found")
+		}
+		method = "LOCAL"
 	}
 	serv.Namespace = namespace
 	serv.Path = path
