@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zfd81/rock/server/api"
+
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 
@@ -40,7 +42,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	conf.GetConfig().APIServer.Port = apiPort
 	ApiServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", conf.GetConfig().APIServer.Port),
-		Handler:      server.ApiRouter(),
+		Handler:      api.Router(),
 		ReadTimeout:  conf.GetConfig().APIServer.ReadTimeout * time.Second,
 		WriteTimeout: conf.GetConfig().APIServer.WriteTimeout * time.Second,
 	}

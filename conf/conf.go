@@ -46,7 +46,7 @@ type Cluster struct {
 }
 
 const (
-	ConfigName = "rock-site"
+	ConfigName = "rock"
 	ConfigPath = "."
 	ConfigType = "yaml"
 
@@ -106,10 +106,7 @@ func init() {
 	viper.SetConfigName(ConfigName)
 	viper.AddConfigPath(ConfigPath)
 	viper.SetConfigType(ConfigType)
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Println(fmt.Errorf("Fatal error config file: %s \n", err))
-	} else {
+	if err := viper.ReadInConfig(); err == nil {
 		err = viper.Unmarshal(&globalConf)
 		if err != nil {
 			panic(fmt.Errorf("Fatal error when reading %s config, unable to decode into struct, %v", ConfigName, err))

@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
+
+	"github.com/zfd81/rock/errs"
+
+	"github.com/zfd81/rock/server/api"
 
 	"github.com/spf13/cobra"
 )
@@ -43,4 +49,20 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		ExitWithError(ExitError, err)
 	}
+}
+
+func wrapResponse(content string) (*api.ApiResponse, error) {
+	resp := &api.ApiResponse{}
+	if err := json.Unmarshal([]byte(content), resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func Print(msg string) {
+	fmt.Printf("[INFO] %s \n", msg)
+}
+
+func Printerr(msg string) {
+	fmt.Printf("[ERROR] %s \n", errs.ErrorStyleFunc(msg))
 }

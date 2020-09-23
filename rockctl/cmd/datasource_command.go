@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
+
+	"github.com/spf13/cast"
 
 	"github.com/zfd81/rock/http"
 	"github.com/zfd81/rock/meta"
@@ -77,36 +78,38 @@ func dsAddCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("ds add command requires datasource file as its argument"))
 	}
-
 	path := args[0]
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		prompt := fmt.Sprintf("open %s: No such file", path)
-		log.Println(prompt)
+		Printerr(prompt)
 		return
 	}
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
 	ds := &meta.DataSource{}
 	err = yaml.Unmarshal(yamlFile, ds)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
-
 	resp, err := client.Post(url("ds"), "application/json;charset=UTF-8", ds, nil)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }
 
@@ -122,16 +125,18 @@ func dsDeleteCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Delete(url(fmt.Sprintf("ds/name/%s", name)), nil, header)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }
 
@@ -147,15 +152,24 @@ func dsGetCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Get(url(fmt.Sprintf("ds/name/%s", name)), nil, header)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		json, err := FormatJSON(resp.Content)
-		if err != nil {
-			fmt.Println(resp.Content)
-		} else {
-			fmt.Printf("[INFO] DataSource %s details:\n", name)
-			fmt.Println(json)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		data := response.Data
+		if data != nil {
+			fmt.Printf("DataSource[%s] details:\n", name)
+			ds := data.(map[string]interface{})
+			fmt.Printf("%12s %15s %15s %15s %8s %8s %10s\n", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
+			fmt.Printf("%12s %15s %15s %15s %8s %8s %10s\n", ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
 		}
+	} else {
+		Printerr(response.Message)
 	}
 }
 
@@ -167,15 +181,29 @@ func dsListCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	resp, err := client.Get(url("ds/list"), nil, header)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		json, err := FormatJSON(resp.Content)
-		if err != nil {
-			fmt.Println(resp.Content)
-		} else {
-			fmt.Println("[INFO] DataSourceice list:")
-			fmt.Println(json)
+		Printerr(err.Error())
+		return
+	}
+	response, err := wrapResponse(resp.Content)
+	if err != nil {
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		data := response.Data
+		if data != nil {
+			dses, ok := data.([]interface{})
+			if ok {
+				fmt.Println("DataSource list:")
+				fmt.Printf("%2s %12s %15s %15s %15s %8s %8s %10s\n", "", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
+				for i, v := range dses {
+					ds := v.(map[string]interface{})
+					fmt.Printf("%2d %12s %15s %15s %15s %8s %8s %10s\n", i, ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
+				}
+			}
 		}
+	} else {
+		Printerr(response.Message)
 	}
 }
 
@@ -183,36 +211,34 @@ func dsChangeCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("ds change command requires datasource file as its argument"))
 	}
-
 	path := args[0]
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		prompt := fmt.Sprintf("open %s: No such file", path)
-		log.Println(prompt)
+		Printerr(prompt)
 		return
 	}
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
 	ds := &meta.DataSource{}
 	err = yaml.Unmarshal(yamlFile, ds)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
 	}
-
 	resp, err := client.Put(url("ds"), ds, nil)
+	response, err := wrapResponse(resp.Content)
 	if err != nil {
-		fmt.Println(err)
+		Printerr(err.Error())
+		return
+	}
+	if response.StatusCode == 200 {
+		Print(response.Message)
 	} else {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("[INFO] code:", data["code"])
-			fmt.Println("[INFO] message:", data["msg"])
-		}
+		Printerr(response.Message)
 	}
 }
 

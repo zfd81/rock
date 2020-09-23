@@ -48,6 +48,12 @@ func (c *ResourceContext) GetDataSource(name string) script.DB {
 	return SelectDataSource(c.namespace, name)
 }
 
+func NewContext(namespace string) *ResourceContext {
+	return &ResourceContext{
+		namespace: namespace,
+	}
+}
+
 var (
 	config = conf.GetConfig()
 

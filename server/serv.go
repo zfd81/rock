@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zfd81/rooster/types/container"
+
 	"github.com/zfd81/rock/conf"
 
 	"github.com/zfd81/rock/errs"
@@ -14,6 +16,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func param(c *gin.Context) (container.Map, error) {
+	p := container.JsonMap{}
+	err := c.ShouldBind(&p)
+	return p, err
+}
 
 func CallGetService(c *gin.Context) {
 	path := c.Param("path")
