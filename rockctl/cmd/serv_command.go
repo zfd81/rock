@@ -159,11 +159,11 @@ func servGetCommandFunc(cmd *cobra.Command, args []string) {
 		if data != nil {
 			fmt.Printf("Service[%s] details:\n", path)
 			serv := data.(map[string]interface{})
-			fmt.Println("--------------------------------------------------------------------")
-			fmt.Printf("%37s %12s %15s\n", "Path", "Method", "Namespace")
-			fmt.Println("--------------------------------------------------------------------")
-			fmt.Printf("%37s %12s %15s\n", serv["Path"], serv["Method"], serv["Namespace"])
-			fmt.Println("--------------------------------------------------------------------")
+			fmt.Println("-----------------------------------------------------------------------------")
+			fmt.Printf("%12s %10s %50s\n", "Namespace", "Method", "Path")
+			fmt.Println("-----------------------------------------------------------------------------")
+			fmt.Printf("%12s %10s %50s\n", serv["Namespace"], serv["Method"], serv["Path"])
+			fmt.Println("-----------------------------------------------------------------------------")
 		} else {
 			Printerr("Service " + path + " not found")
 		}
@@ -205,14 +205,14 @@ func servListCommandFunc(cmd *cobra.Command, args []string) {
 			servs, ok := data.([]interface{})
 			if ok {
 				fmt.Println("Service list:")
-				fmt.Println("-----------------------------------------------------------------------")
-				fmt.Printf("%2s %37s %12s %15s\n", "", "Path", "Method", "Namespace")
-				fmt.Println("-----------------------------------------------------------------------")
+				fmt.Println("--------------------------------------------------------------------------------")
+				fmt.Printf("%2s %12s %10s %50s\n", "", "Namespace", "Method", "Path")
+				fmt.Println("--------------------------------------------------------------------------------")
 				for i, v := range servs {
 					serv := v.(map[string]interface{})
-					fmt.Printf("%2d %37s %12s %15s\n", i, serv["Path"], serv["Method"], serv["Namespace"])
+					fmt.Printf("%2d %12s %10s %50s\n", i, serv["Namespace"], serv["Method"], serv["Path"])
 				}
-				fmt.Println("-----------------------------------------------------------------------")
+				fmt.Println("--------------------------------------------------------------------------------")
 			}
 		}
 	} else {

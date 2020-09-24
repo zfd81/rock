@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/zfd81/rock/errs"
 
 	"github.com/zfd81/rock/script"
@@ -176,18 +178,19 @@ func InitResources() error {
 			if err != nil {
 				log.Fatal(err)
 			}
+			namespace, _, path := meta.ServicePath(string(kv.Key))
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				AddModule(m)
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", path)
 			} else {
 				res := core.NewResource(serv)
 				AddResource(res)
-				_, _, path := meta.ServicePath(string(kv.Key))
-				fmt.Printf("[INFO] Service %s:%s initialized successfully \n", res.GetMethod(), path)
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), path)
 			}
 			cnt++
 		}
-		fmt.Printf("[INFO] A total of %d services were initialized \n", cnt)
+		color.Green("[INFO] A total of %d services were initialized \n", cnt)
 	}
 	return err
 }
@@ -250,7 +253,7 @@ func InitDbs() {
 			}
 		}
 	}
-	fmt.Printf("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
+	color.Green("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
 }
 
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
