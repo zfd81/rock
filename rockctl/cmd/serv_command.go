@@ -210,7 +210,7 @@ func servListCommandFunc(cmd *cobra.Command, args []string) {
 				fmt.Println("--------------------------------------------------------------------------------")
 				for i, v := range servs {
 					serv := v.(map[string]interface{})
-					fmt.Printf("%2d %12s %10s %50s\n", i, serv["Namespace"], serv["Method"], serv["Path"])
+					fmt.Printf("%2d %12s %10s %50s\n", i+1, serv["Namespace"], serv["Method"], serv["Path"])
 				}
 				fmt.Println("--------------------------------------------------------------------------------")
 			}
