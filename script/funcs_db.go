@@ -51,7 +51,7 @@ func DBQuery(env Environment) func(call otto.FunctionCall) otto.Value {
 		}
 		pageNumber_v := call.Argument(3)
 		if pageNumber_v.IsDefined() {
-			if !pageNumber_v.IsNumber() {
+			if !pageNumber_v.IsNumber() && !pageNumber_v.IsString() {
 				return ErrorResult(call, "Parameter pageNumber data type error")
 			}
 			pageNumber_v, err := pageNumber_v.ToInteger()
@@ -60,7 +60,7 @@ func DBQuery(env Environment) func(call otto.FunctionCall) otto.Value {
 			}
 			pageNumber = int(pageNumber_v)
 			pageSize_v := call.Argument(4)
-			if pageSize_v.IsNumber() {
+			if pageSize_v.IsNumber() || pageSize_v.IsString() {
 				pageSize_v, err := pageSize_v.ToInteger()
 				if err != nil {
 					return ErrorResult(call, err.Error())
