@@ -71,7 +71,14 @@ func Test(c *gin.Context) {
 			} else if strings.ToUpper(param.DataType) == meta.DataTypeMap {
 				param.Value = cast.ToStringMap(val)
 			} else if strings.ToUpper(param.DataType) == meta.DataTypeArray {
-				param.Value = cast.ToStringSlice(val)
+				if l, ok := val.([]map[string]interface{}); ok {
+					param.Value = l
+				} else if l, ok := val.([]string); ok {
+					param.Value = l
+				} else {
+					c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "Parameter data type error"))
+					return
+				}
 			}
 		}
 	}

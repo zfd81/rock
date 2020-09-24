@@ -174,7 +174,7 @@ func wrapParam(c *gin.Context, resource Resource) error {
 			} else if strings.ToUpper(param.DataType) == meta.DataTypeMap {
 				param.Value = cast.ToStringMap(val)
 			} else if strings.ToUpper(param.DataType) == meta.DataTypeArray {
-				param.Value = cast.ToStringSlice(val)
+				param.Value = val
 			}
 		}
 	}

@@ -158,11 +158,16 @@ func DBSave(env Environment) func(call otto.FunctionCall) otto.Value {
 		if ok {
 			num, err = db.Save(m, table)
 		} else {
-			l, ok := arg.([]map[string]interface{})
+			l, ok := arg.([]interface{})
 			if ok {
-				num, err = db.BatchSave(SliceParam(l), table)
+				num, err = db.BatchSave(l, table)
 			} else {
-				return ErrorResult(call, "Parameter data type error")
+				l, ok := arg.([]map[string]interface{})
+				if ok {
+					num, err = db.BatchSave(SliceParam(l), table)
+				} else {
+					return ErrorResult(call, "Parameter data type error")
+				}
 			}
 		}
 		if err != nil {
