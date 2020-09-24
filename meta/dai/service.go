@@ -124,5 +124,18 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 			servs = append(servs, serv)
 		}
 	}
+
+	//查询Module服务
+	key = meta.ServiceKey(namespace, "local", path)
+	kvs, err = etcd.GetWithPrefix(key)
+	if err == nil {
+		for _, kv := range kvs {
+			serv, err := meta.NewService(kv.Value)
+			if err != nil {
+				continue
+			}
+			servs = append(servs, serv)
+		}
+	}
 	return servs, err
 }
