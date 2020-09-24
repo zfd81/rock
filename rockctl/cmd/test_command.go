@@ -78,7 +78,16 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 	})
 	for _, param := range serv.Params {
 		v := readParameterInteractive(param.Name)
-		ps[param.Name] = v
+		if strings.ToUpper(param.DataType) == meta.DataTypeMap {
+			m := map[string]interface{}{}
+			if err := json.Unmarshal([]byte(v), &m); err != nil {
+				Printerr("Parameter[" + param.Name + "] data type error")
+				return
+			}
+			ps[param.Name] = m
+		} else {
+			ps[param.Name] = v
+		}
 	}
 	params["params"] = ps
 	resp, err = client.Post(url("test"), "application/json;charset=UTF-8", params, nil)
