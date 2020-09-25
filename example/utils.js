@@ -23,5 +23,11 @@ module.exports = {
         } else {
             return str;
         }
+    },
+    startsWith: function (str, prefix) {
+        if (prefix == null || prefix == "") {
+            return true;
+        }
+        return str.indexOf(prefix) == 0
     }
 };

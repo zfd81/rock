@@ -71,6 +71,8 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	server.InitDbs()                    // 根据元数据初始化数据源
 	server.InitResources()              // 根据元数据初始化资源
 	cluster.Register(time.Now().Unix()) // 集群注册
+	color.Green("[INFO] API server listening on: %d", conf.GetConfig().APIServer.Port)
+	color.Green("[INFO] Rock server listening on: %d", conf.GetConfig().Port)
 	if err := g.Wait(); err != nil {
 		log.Fatal(err)
 	}
