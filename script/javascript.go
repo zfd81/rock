@@ -68,11 +68,15 @@ func (se *JavaScriptImpl) Run() (err error) {
 }
 
 func New() *JavaScriptImpl {
-	return &JavaScriptImpl{
+	se := &JavaScriptImpl{
 		vm:     otto.New(),
 		sdk:    string(sdkSource),
 		script: bytes.NewBufferString(""),
 	}
+	se.AddFunc("require", func(call otto.FunctionCall) otto.Value {
+		return otto.Value{}
+	})
+	return se
 }
 
 func NewWithProcessor(processor Processor) *JavaScriptImpl {
