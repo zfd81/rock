@@ -54,7 +54,7 @@ func Test(c *gin.Context) {
 	if found {
 		params := cast.ToStringMap(ps)
 		for _, param := range res.GetPathParams() {
-			param.Value = cast.ToString(params[param.Name])
+			param.SetValue(cast.ToString(params[param.Name]))
 		}
 		for _, param := range res.GetRequestParams() {
 			val, found := params[param.Name]
@@ -62,23 +62,10 @@ func Test(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamNotFound, param.Name))
 				return
 			}
-			if strings.ToUpper(param.DataType) == meta.DataTypeString {
-				param.Value = cast.ToString(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeInteger {
-				param.Value = cast.ToInt(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeBool {
-				param.Value = cast.ToBool(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeMap {
-				param.Value = cast.ToStringMap(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeArray {
-				if l, ok := val.([]map[string]interface{}); ok {
-					param.Value = l
-				} else if l, ok := val.([]string); ok {
-					param.Value = l
-				} else {
-					c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "Parameter data type error"))
-					return
-				}
+			err = param.SetValue(val)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "Parameter data type error"))
+				return
 			}
 		}
 	}

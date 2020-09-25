@@ -155,7 +155,7 @@ func SelectResource(method string, path string) Resource {
 			if pattern.MatchString(path) {
 				pathFragments := strings.Split(path, "/")
 				for _, param := range resource.GetPathParams() {
-					param.Value = pathFragments[param.Index]
+					param.SetValue(pathFragments[param.Index])
 				}
 				resource.Clear()
 				return resource

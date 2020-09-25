@@ -2,17 +2,12 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/zfd81/rooster/types/container"
 
 	"github.com/zfd81/rock/conf"
 
 	"github.com/zfd81/rock/errs"
-
-	"github.com/spf13/cast"
-
-	"github.com/zfd81/rock/meta"
 
 	"github.com/gin-gonic/gin"
 )
@@ -155,7 +150,7 @@ func wrapParam(c *gin.Context, resource Resource) error {
 	if len(resource.GetRequestParams()) > 0 {
 		p, err := param(c)
 		if err != nil {
-			return err
+			return errs.NewError(err)
 		}
 		if p == nil || p.Empty() {
 			return errs.New(errs.ErrParamBad)
@@ -165,16 +160,8 @@ func wrapParam(c *gin.Context, resource Resource) error {
 			if !found {
 				return errs.New(errs.ErrParamNotFound, param.Name)
 			}
-			if strings.ToUpper(param.DataType) == meta.DataTypeString {
-				param.Value = cast.ToString(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeInteger {
-				param.Value = cast.ToInt(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeBool {
-				param.Value = cast.ToBool(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeMap {
-				param.Value = cast.ToStringMap(val)
-			} else if strings.ToUpper(param.DataType) == meta.DataTypeArray {
-				param.Value = val
+			if err = param.SetValue(val); err != nil {
+				return errs.New(errs.ErrParamBad, err.Error())
 			}
 		}
 	}

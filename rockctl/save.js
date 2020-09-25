@@ -82,3 +82,12 @@ db.save(table, users) //添加多条记录
     .catch(function (error) {
         $.err(error)
     });
+
+//删除用户
+db.exec("delete from das_sys_user where {@vals[OR] id=:this.Id}", users).then(function (data) {
+    $.log(data)
+    $.log("删除成功")
+})
+    .catch(function (error) {
+        $.err(error)
+    });

@@ -125,10 +125,10 @@ func (r *ParrotResource) SetRespData(data interface{}) {
 
 func (r *ParrotResource) Run() (string, *http.Response, error) {
 	for _, p := range r.pathParams {
-		r.se.AddVar(p.Name, p.Value)
+		r.se.AddVar(p.Name, p.GetValue())
 	}
 	for _, p := range r.requestParams {
-		r.se.AddVar(p.Name, p.Value)
+		r.se.AddVar(p.Name, p.GetValue())
 	}
 	err := r.se.Run()
 	if err != nil {
@@ -158,10 +158,7 @@ func NewResource(serv *meta.Service) *ParrotResource {
 		requestParams: []*meta.Parameter{},
 	}
 	regexPath, err := util.ReplaceBetween(path, "{", "}", func(i int, s int, e int, c string) (string, error) {
-		param := &meta.Parameter{
-			Name:     c,
-			DataType: "string",
-		}
+		param, _ := meta.NewParameter(c, "string")
 		res.AddPathParam(param)
 		return Regex, nil
 	})

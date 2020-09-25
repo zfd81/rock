@@ -215,6 +215,19 @@ func DBExec(env Environment) func(call otto.FunctionCall) otto.Value {
 				arg = arg_float
 			}
 		}
+		//v, ok := arg.([]interface{})
+		//if !ok {
+		//	v, ok := arg.([]map[string]interface{})
+		//	if ok {
+		//		arg = v
+		//	}
+		//} else {
+		//	arr := []interface{}{}
+		//	for _, i := range v {
+		//		arr = append(arr, i.(map[string]interface{}))
+		//	}
+		//	arg = arr
+		//}
 		num, err := db.Exec(sql, arg)
 		if err != nil {
 			return ErrorResult(call, err.Error())
