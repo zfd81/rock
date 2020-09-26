@@ -52,6 +52,10 @@ func (se *JavaScriptImpl) AddFunc(name string, function Function) error {
 	})
 }
 
+func (se *JavaScriptImpl) GetSdk() string {
+	return se.sdk
+}
+
 func (se *JavaScriptImpl) SetScript(src string) {
 	se.script.Reset()
 	se.script.WriteString(se.sdk)

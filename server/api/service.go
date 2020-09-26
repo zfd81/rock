@@ -257,6 +257,7 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 			}
 		}
 	} else {
+		se.AddScript(se.GetSdk())
 		se.AddScript("var module={};")
 		se.AddScript(source)
 		err := se.Run()

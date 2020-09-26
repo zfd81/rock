@@ -119,5 +119,42 @@ var $ = {
     time: function () {
         var date = new Date()
         return date.toLocaleDateString() + " " + date.toLocaleTimeString()
+    },
+    left: function (str, length) {
+        if (str == null)
+            return null;
+        if (length < 0) {
+            return "";
+        }
+        if (length < str.length) {
+            return str.substring(0, length);
+        } else {
+            return str;
+        }
+    },
+    right: function (str, length) {
+        if (str == null)
+            return null;
+        if (length < 0) {
+            return "";
+        }
+        if (length < str.length) {
+            return str.substring(str.length - length);
+        } else {
+            return str;
+        }
+    },
+    startsWith: function (str, prefix) {
+        if (prefix == null || prefix == "") {
+            return true;
+        }
+        return str.indexOf(prefix) == 0
+    },
+    endsWith: function (str, suffix) {
+        if (suffix == null || suffix == "") {
+            return true;
+        }
+        var reg = new RegExp(suffix + "$");
+        return reg.test(str);
     }
 };
