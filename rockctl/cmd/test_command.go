@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/zfd81/rooster/util"
 
 	"github.com/spf13/cobra"
@@ -102,11 +104,11 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 		fmt.Println("[ERROR]", err)
 	} else {
 		fmt.Println("")
-		fmt.Println("Service Definition:")
+		color.Green("Service Definition:")
 		fmt.Println("[NAMESPACE]", serv.Namespace)
 		fmt.Println("[PATH]", serv.Path)
 		fmt.Println("[METHOD]", serv.Method)
-		fmt.Println("Execution Results:")
+		color.Green("Execution Results:")
 		fmt.Print(data["log"])
 		if resp.StatusCode == 200 {
 			bytes, err := json.Marshal(data["header"])
