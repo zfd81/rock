@@ -48,7 +48,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	}
 	ParrotServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", conf.GetConfig().Port),
-		Handler:      server.ParrotRouter(),
+		Handler:      server.Router(),
 		ReadTimeout:  conf.GetConfig().ReadTimeout * time.Second,
 		WriteTimeout: conf.GetConfig().WriteTimeout * time.Second,
 	}

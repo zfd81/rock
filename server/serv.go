@@ -168,7 +168,7 @@ func wrapParam(c *gin.Context, resource Resource) error {
 	return nil
 }
 
-func ParrotRouter() http.Handler {
+func Router() http.Handler {
 	e := gin.New()
 	e.Use(gin.Logger(), gin.Recovery())
 	parrot := e.Group(conf.GetConfig().ServiceName)
