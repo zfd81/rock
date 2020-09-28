@@ -11,7 +11,7 @@ func CreateDataSource(ds *meta.DataSource) error {
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := ds.Key()
+	key := ds.EtcdKey()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -24,7 +24,7 @@ func CreateDataSource(ds *meta.DataSource) error {
 }
 
 func DeleteDataSource(ds *meta.DataSource) error {
-	_, err := etcd.Del(ds.Key())
+	_, err := etcd.Del(ds.EtcdKey())
 	return err
 }
 
@@ -33,7 +33,7 @@ func ModifyDataSource(ds *meta.DataSource) error {
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := ds.Key()
+	key := ds.EtcdKey()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -46,7 +46,7 @@ func ModifyDataSource(ds *meta.DataSource) error {
 }
 
 func GetDataSource(namespace string, name string) (*meta.DataSource, error) {
-	key := meta.DataSourceKey(namespace, name)
+	key := meta.DataSourceEtcdKey(namespace, name)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func GetDataSource(namespace string, name string) (*meta.DataSource, error) {
 
 func ListDataSource(namespace string, name string) ([]*meta.DataSource, error) {
 	dses := make([]*meta.DataSource, 0, 50)
-	key := meta.DataSourceKey(namespace, name)
+	key := meta.DataSourceEtcdKey(namespace, name)
 	kvs, err := etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {

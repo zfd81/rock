@@ -1,7 +1,7 @@
 package meta
 
 import (
-	"encoding/json"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type ParamType int
@@ -29,21 +29,21 @@ func (s *Service) AddParam(name string, dataType string) error {
 	return nil
 }
 
-func (s *Service) Key() string {
-	return ServiceKey(s.Namespace, s.Method, s.Path)
+func (s *Service) EtcdKey() string {
+	return ServiceEtcdKey(s.Namespace, s.Method, s.Path)
 }
 
 func (s *Service) String() (string, error) {
-	bytes, err := json.Marshal(s)
+	bytes, err := bson.Marshal(s)
 	if err != nil {
 		return "", err
 	}
 	return string(bytes), nil
 }
 
-func NewService(jsonstr []byte) (*Service, error) {
+func NewService(bytes []byte) (*Service, error) {
 	serv := &Service{}
-	if err := json.Unmarshal(jsonstr, serv); err != nil {
+	if err := bson.Unmarshal(bytes, serv); err != nil {
 		return nil, err
 	}
 	return serv, nil

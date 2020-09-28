@@ -31,7 +31,7 @@ func SysRequire(process Processor) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) (value otto.Value) {
 		path := strings.TrimSpace(call.Argument(0).String())  //获取依赖路径
 		module := process.SelectModule(meta.FormatPath(path)) //获取模块
-		if reflect.ValueOf(module).IsNil() {
+		if module == nil || reflect.ValueOf(module).IsNil() {
 			return ErrorResult(call, "Module path["+path+"] not found")
 		}
 

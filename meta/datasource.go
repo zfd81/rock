@@ -1,6 +1,8 @@
 package meta
 
-import "encoding/json"
+import (
+	"gopkg.in/mgo.v2/bson"
+)
 
 type DataSource struct {
 	Namespace string `yaml:"namespace"` //命名空间 注:不能包含"/"
@@ -13,21 +15,21 @@ type DataSource struct {
 	Database  string `yaml:"database"`
 }
 
-func (ds *DataSource) Key() string {
-	return DataSourceKey(ds.Namespace, ds.Name)
+func (ds *DataSource) EtcdKey() string {
+	return DataSourceEtcdKey(ds.Namespace, ds.Name)
 }
 
 func (ds *DataSource) String() (string, error) {
-	bytes, err := json.Marshal(ds)
+	bytes, err := bson.Marshal(ds)
 	if err != nil {
 		return "", err
 	}
 	return string(bytes), nil
 }
 
-func NewDataSource(jsonstr []byte) (*DataSource, error) {
+func NewDataSource(bytes []byte) (*DataSource, error) {
 	ds := &DataSource{}
-	if err := json.Unmarshal(jsonstr, ds); err != nil {
+	if err := bson.Unmarshal(bytes, ds); err != nil {
 		return nil, err
 	}
 	return ds, nil

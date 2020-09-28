@@ -11,7 +11,7 @@ func CreateService(serv *meta.Service) error {
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := serv.Key()
+	key := serv.EtcdKey()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -27,7 +27,7 @@ func CreateService(serv *meta.Service) error {
 }
 
 func DeleteService(serv *meta.Service) error {
-	_, err := etcd.Del(serv.Key())
+	_, err := etcd.Del(serv.EtcdKey())
 	if err != nil {
 		return errs.NewError(err)
 	}
@@ -39,7 +39,7 @@ func ModifyService(serv *meta.Service) error {
 	if err != nil {
 		return errs.NewError(err)
 	}
-	key := serv.Key()
+	key := serv.EtcdKey()
 	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
@@ -55,7 +55,7 @@ func ModifyService(serv *meta.Service) error {
 }
 
 func GetService(namespace string, method string, path string) (*meta.Service, error) {
-	key := meta.ServiceKey(namespace, method, path)
+	key := meta.ServiceEtcdKey(namespace, method, path)
 	v, err := etcd.Get(key)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	servs := make([]*meta.Service, 0, 50)
 
 	//查询GET服务
-	key := meta.ServiceKey(namespace, "get", path)
+	key := meta.ServiceEtcdKey(namespace, "get", path)
 	kvs, err := etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
@@ -87,7 +87,7 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	}
 
 	//查询POST服务
-	key = meta.ServiceKey(namespace, "post", path)
+	key = meta.ServiceEtcdKey(namespace, "post", path)
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
@@ -100,7 +100,7 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	}
 
 	//查询PUT服务
-	key = meta.ServiceKey(namespace, "put", path)
+	key = meta.ServiceEtcdKey(namespace, "put", path)
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
@@ -113,7 +113,7 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	}
 
 	//查询DELETE服务
-	key = meta.ServiceKey(namespace, "delete", path)
+	key = meta.ServiceEtcdKey(namespace, "delete", path)
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {
@@ -126,7 +126,7 @@ func ListService(namespace string, path string) ([]*meta.Service, error) {
 	}
 
 	//查询Module服务
-	key = meta.ServiceKey(namespace, "local", path)
+	key = meta.ServiceEtcdKey(namespace, "local", path)
 	kvs, err = etcd.GetWithPrefix(key)
 	if err == nil {
 		for _, kv := range kvs {

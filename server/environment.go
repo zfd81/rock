@@ -170,7 +170,7 @@ func InitResources() error {
 	if len(config.Namespaces) > 0 {
 		namespace = config.Namespaces[0]
 	}
-	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath() + meta.FormatPath(namespace))
+	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath(namespace))
 	cnt := 0
 	if err == nil {
 		for _, kv := range kvs {
@@ -178,15 +178,14 @@ func InitResources() error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			namespace, _, path := meta.ServicePath(string(kv.Key))
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				AddModule(m)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", path)
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
 			} else {
 				res := core.NewResource(serv)
 				AddResource(res)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), path)
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			cnt++
 		}
@@ -234,7 +233,7 @@ func InitDbs() {
 	cnt := 0
 	ecnt := 0
 	for _, namespace := range namespaces {
-		kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath() + meta.FormatPath(namespace))
+		kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath(namespace))
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -257,27 +256,28 @@ func InitDbs() {
 }
 
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
-	full_path := meta.MetaPath(string(key))
+	splitted := strings.SplitN(string(key)[len(meta.GetMetaRootPath()):], "/", 5)
+	namespace := splitted[1]
+	metaType := splitted[2]
 	if operType == etcd.CREATE {
 		switch {
-		case strings.HasPrefix(full_path, meta.ServiceDirectory):
+		case metaType == meta.ServiceDirectory[1:]:
 			serv, err := meta.NewService(value)
 			if err != nil {
 				log.Fatalln(err)
 				return
 			}
-			namespace, _, path := meta.ServicePath(string(key))
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				AddModule(m)
-				fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
+				fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
 			} else {
 				res := core.NewResource(serv)
 				AddResource(res)
-				fmt.Printf("[INFO] Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), path)
+				fmt.Printf("[INFO] Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			break
-		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
+		case metaType == meta.DataSourceDirectory[1:]:
 			ds, err := meta.NewDataSource(value)
 			if err != nil {
 				log.Fatalln(err)
@@ -292,31 +292,31 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 		}
 	} else if operType == etcd.MODIFY {
 		switch {
-		case strings.HasPrefix(full_path, meta.ServiceDirectory):
+		case metaType == meta.ServiceDirectory[1:]:
 			serv, err := meta.NewService(value)
 			if err != nil {
 				log.Fatal(err)
 				return
 			}
+			path := splitted[4]
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				RemoveModule(serv.Namespace, serv.Path)
 				AddModule(m)
-				_, _, path := meta.ServicePath(string(key))
 				fmt.Printf("[INFO] Module %s: modified successfully \n", path)
 			} else {
 				res := core.NewResource(serv)
 				RemoveResource(serv.Method, serv.Path)
 				AddResource(res)
-				_, _, path := meta.ServicePath(string(key))
 				fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
 			}
 			break
 		}
 	} else if operType == etcd.DELETE {
 		switch {
-		case strings.HasPrefix(full_path, meta.ServiceDirectory):
-			namespace, method, path := meta.ServicePath(string(key))
+		case metaType == meta.ServiceDirectory[1:]:
+			method := splitted[3]
+			path := splitted[4]
 			if strings.ToUpper(method) == http.MethodLocal {
 				module := RemoveModule(namespace, path)
 				if module != nil {
@@ -327,8 +327,8 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				fmt.Printf("[INFO] Service %s:%s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), strings.ToUpper(method), path)
 			}
 			break
-		case strings.HasPrefix(full_path, meta.DataSourceDirectory):
-			namespace, name := meta.DataSourcePath(string(key))
+		case metaType == meta.DataSourceDirectory[1:]:
+			name := splitted[3]
 			db := RemoveDataSource(namespace, name)
 			if db != nil {
 				fmt.Printf("[INFO] DataSource %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace, "", 1), db.Name)
