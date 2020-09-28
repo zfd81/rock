@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/spf13/cast"
+
 	"github.com/spf13/cobra"
 	"github.com/zfd81/rock/http"
 	"github.com/zfd81/rock/meta"
@@ -162,7 +164,7 @@ func servGetCommandFunc(cmd *cobra.Command, args []string) {
 			fmt.Println("-----------------------------------------------------------------------------")
 			fmt.Printf("%12s %10s %50s\n", "Namespace", "Method", "Path")
 			fmt.Println("-----------------------------------------------------------------------------")
-			fmt.Printf("%12s %10s %50s\n", serv["Namespace"], serv["Method"], serv["Path"])
+			fmt.Printf("%12s %10s %50s\n", serv["Namespace"], serv["Method"], meta.FormatPath(cast.ToString(serv["Path"])))
 			fmt.Println("-----------------------------------------------------------------------------")
 		} else {
 			Printerr("Service " + path + " not found")
@@ -210,7 +212,7 @@ func servListCommandFunc(cmd *cobra.Command, args []string) {
 				fmt.Println("--------------------------------------------------------------------------------")
 				for i, v := range servs {
 					serv := v.(map[string]interface{})
-					fmt.Printf("%2d %12s %10s %50s\n", i+1, serv["Namespace"], serv["Method"], serv["Path"])
+					fmt.Printf("%2d %12s %10s %50s\n", i+1, serv["Namespace"], serv["Method"], meta.FormatPath(cast.ToString(serv["Path"])))
 				}
 				fmt.Println("--------------------------------------------------------------------------------")
 			}
