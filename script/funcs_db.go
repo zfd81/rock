@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zfd81/rock/errs"
-
 	"github.com/robertkrimen/otto"
 )
 
@@ -234,24 +232,6 @@ func DBExec(env Environment) func(call otto.FunctionCall) otto.Value {
 		}
 		return Result(call, num)
 	}
-}
-
-func Result(call otto.FunctionCall, data interface{}) (value otto.Value) {
-	result := &FuncResult{
-		StatusCode: 200,
-		Data:       data,
-	}
-	value, _ = call.Otto.ToValue(result)
-	return
-}
-
-func ErrorResult(call otto.FunctionCall, err string) (value otto.Value) {
-	result := &FuncResult{
-		StatusCode: 400,
-		Message:    errs.ErrorStyleFunc(err),
-	}
-	value, _ = call.Otto.ToValue(result)
-	return
 }
 
 func SliceParam(args []map[string]interface{}) []interface{} {

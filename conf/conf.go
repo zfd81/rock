@@ -16,6 +16,7 @@ type Config struct {
 	ServiceName  string        `mapstructure:"service-name"`
 	Namespaces   []string      `mapstructure:"namespaces"`
 	Directory    string        `mapstructure:"directory"`
+	KVTTL        int64         `mapstructure:"kv-ttl"`
 	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
 	WriteTimeout time.Duration `mapstructure:"write-timeout"`
 	APIServer    APIServer     `mapstructure:"api-server"`
@@ -80,6 +81,7 @@ var defaultConf = Config{
 	ServiceName:  "/",
 	Namespaces:   []string{},
 	Directory:    "/rock",
+	KVTTL:        180,
 	ReadTimeout:  10,
 	WriteTimeout: 15,
 	APIServer: APIServer{

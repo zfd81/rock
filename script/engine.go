@@ -1,6 +1,7 @@
 package script
 
 import (
+	"github.com/zfd81/rock/errs"
 	"github.com/zfd81/rooster/rsql"
 
 	"github.com/zfd81/rooster/types/container"
@@ -51,8 +52,28 @@ type DB interface {
 }
 
 type FuncResult struct {
-	Status     bool        `json:"status"`
+	Normal     bool        `json:"-"`
 	StatusCode int         `json:"code"`
 	Data       interface{} `json:"data"`
 	Message    string      `json:"msg"`
+}
+
+func Result(call otto.FunctionCall, data interface{}) (value otto.Value) {
+	result := &FuncResult{
+		Normal:     true,
+		StatusCode: 200,
+		Data:       data,
+	}
+	value, _ = call.Otto.ToValue(result)
+	return
+}
+
+func ErrorResult(call otto.FunctionCall, err string) (value otto.Value) {
+	result := &FuncResult{
+		Normal:     false,
+		StatusCode: 400,
+		Message:    errs.ErrorStyleFunc(err),
+	}
+	value, _ = call.Otto.ToValue(result)
+	return
 }

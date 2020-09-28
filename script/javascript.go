@@ -98,6 +98,8 @@ func NewWithProcessor(processor Processor) *JavaScriptImpl {
 	se.AddFunc("_db_queryOne", DBQueryOne(se.processor))
 	se.AddFunc("_db_save", DBSave(se.processor))
 	se.AddFunc("_db_exec", DBExec(se.processor))
+	se.AddFunc("_kv_get", KvGet(se.processor))
+	se.AddFunc("_kv_set", KvSet(se.processor))
 	return se
 }
 

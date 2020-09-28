@@ -61,6 +61,20 @@ func PutWithLease(key, value string, leaseID clientv3.LeaseID) (revision int64, 
 	return resp.Header.Revision, nil
 }
 
+func PutWithTTL(key, value string, ttl int64) (revision int64, err error) {
+	lease, err := client.Grant(context.TODO(), ttl)
+	if err != nil {
+		return -1, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Etcd.RequestTimeout)*time.Second)
+	resp, err := client.Put(ctx, key, value, clientv3.WithLease(lease.ID))
+	cancel()
+	if err != nil {
+		return -1, err
+	}
+	return resp.Header.Revision, nil
+}
+
 func Del(key string) (revision int64, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Etcd.RequestTimeout)*time.Second)
 	resp, err := client.Delete(ctx, key)

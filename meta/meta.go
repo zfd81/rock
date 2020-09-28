@@ -14,6 +14,7 @@ const (
 	MetaDirectory       = "/meta"
 	ServiceDirectory    = "/_serv"
 	DataSourceDirectory = "/_ds"
+	KVDirectory         = "/_kv"
 )
 
 var (
@@ -97,6 +98,17 @@ func DataSourcePath(key string) (namespace string, name string) {
 	}
 	name = key[position:]
 	return
+}
+
+func GetKVRootPath(namespace string) string {
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+	return GetMetaRootPath() + FormatPath(namespace) + KVDirectory
+}
+
+func KVEtcdKey(namespace string, name string) string {
+	return GetKVRootPath(namespace) + FormatPath(name)
 }
 
 func FormatPath(path string) string {
