@@ -17,3 +17,5 @@ var users = kvs.get("users")
 if (users != null) {
     $.log(users[1].name)
 }
+
+$.log(typeof(kvs.get("friend")))

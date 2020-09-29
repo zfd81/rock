@@ -34,22 +34,15 @@ func SysRequire(process Processor) func(call otto.FunctionCall) otto.Value {
 		if module == nil || reflect.ValueOf(module).IsNil() {
 			return ErrorResult(call, "Module path["+path+"] not found")
 		}
-
-		call.Otto.Set("module", map[string]interface{}{})
+		call.Otto.Set("exports", map[string]interface{}{})
 		_, err := call.Otto.Run(module.GetSource())
 		if err != nil {
 			return otto.NullValue()
 		}
-		m_v, err := call.Otto.Get("module")
+		m_v, err := call.Otto.Get("exports")
 		if err != nil {
 			return otto.NullValue()
 		}
-		m_obj, err := m_v.Export()
-		m, ok := m_obj.(map[string]interface{})
-		if !ok {
-			return otto.NullValue()
-		}
-		value, _ = call.Otto.ToValue(m["exports"])
-		return
+		return m_v
 	}
 }

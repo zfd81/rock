@@ -213,12 +213,11 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 		}
 		definition = source[start : end+3]
 	}
-	var namespace string
-	var path string
-	var method string
-	serv := &meta.Service{}
-	se := script.New()
-	if definition != "" {
+	if definition == "" {
+		return ModuleAnalysis(source)
+	} else {
+		serv := &meta.Service{}
+		se := script.New()
 		se.SetScript(definition)
 		err := se.Run()
 		if err != nil {
@@ -228,25 +227,25 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 		if err != nil {
 			return nil, errs.New(errs.ErrParamBad, "Service definition error:"+err.Error())
 		}
-		val, ok := data.(map[string]interface{})
+		define, ok := data.(map[string]interface{})
 		if !ok {
 			return nil, errs.New(errs.ErrParamBad, "Service definition error")
 		}
-		namespace = cast.ToString(val["namespace"])
-		path = cast.ToString(val["path"])
-		if path == "" {
+		serv.Namespace = cast.ToString(define["namespace"])
+		serv.Path = cast.ToString(define["path"])
+		if serv.Path == "" {
 			return nil, errs.New(errs.ErrParamBad, "Service path not found")
 		}
-		method = cast.ToString(val["method"])
-		if method == "" {
+		serv.Method = cast.ToString(define["method"])
+		if serv.Method == "" {
 			return nil, errs.New(errs.ErrParamBad, "Service method not found")
 		}
-		m := strings.ToUpper(method)
+		m := strings.ToUpper(serv.Method)
 		if m != http.MethodGet && m != http.MethodPost &&
 			m != http.MethodPut && m != http.MethodDelete {
-			return nil, errs.New(errs.ErrParamBad, "Service method["+method+"] error")
+			return nil, errs.New(errs.ErrParamBad, "Service method["+serv.Method+"] error")
 		}
-		params := val["params"]
+		params := define["params"]
 		if params != nil {
 			ps, ok := params.([]map[string]interface{})
 			if !ok {
@@ -256,36 +255,38 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 				serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]))
 			}
 		}
-	} else {
-		se.AddScript(se.GetSdk())
-		se.AddScript("var module={};")
-		se.AddScript(source)
-		err := se.Run()
-		if err != nil {
-			return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
-		}
-		value, err := se.GetVar("module")
-		if err != nil {
-			return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
-		}
-		module, ok := value.(map[string]interface{})
-		if !ok {
-			return nil, errs.New(errs.ErrParamBad, "Module definition error")
-		}
-		value = module["exports"]
-		exports, ok := value.(map[string]interface{})
-		if !ok {
-			return nil, errs.New(errs.ErrParamBad, "Module definition error")
-		}
-		namespace = cast.ToString(exports["namespace"])
-		path = cast.ToString(exports["path"])
-		if path == "" {
-			return nil, errs.New(errs.ErrParamBad, "Module path not found")
-		}
-		method = "LOCAL"
+		return serv, nil
 	}
-	serv.Namespace = namespace
-	serv.Path = path
-	serv.Method = method
+}
+
+func ModuleAnalysis(source string) (*meta.Service, error) {
+	serv := &meta.Service{}
+	se := script.New()
+	se.AddScript(se.GetSdk())
+	se.AddScript("var exports={};")
+	se.AddScript(source)
+	err := se.Run()
+	if err != nil {
+		return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
+	}
+	value, err := se.GetVar("exports")
+	if err != nil {
+		return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
+	}
+	module, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, errs.New(errs.ErrParamBad, "Module definition error")
+	}
+	value = module["define"]
+	define, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, errs.New(errs.ErrParamBad, "Module definition error")
+	}
+	serv.Namespace = cast.ToString(define["namespace"])
+	serv.Path = cast.ToString(define["path"])
+	if serv.Path == "" {
+		return nil, errs.New(errs.ErrParamBad, "Module path not found")
+	}
+	serv.Method = "LOCAL"
 	return serv, nil
 }

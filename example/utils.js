@@ -1,5 +1,7 @@
-module.exports = {
-    path: "/example/utils",
+exports = {
+    define: {
+        path: "/example/utils",
+    },
     left: function (str, length) {
         return $.left(str, length)
     },

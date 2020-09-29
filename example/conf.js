@@ -1,5 +1,7 @@
-module.exports = {
-    path: "/example/conf",
+exports = {
+    define:{
+        path: "/example/conf",
+    },
     ds: "datasource",
     serv: function (url) {
         if ($.startsWith(url, "/")) {
