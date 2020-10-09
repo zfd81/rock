@@ -181,11 +181,11 @@ func InitResources() error {
 			if serv.Method == http.MethodLocal {
 				m := core.NewModule(serv)
 				AddModule(m)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
 			} else {
 				res := core.NewResource(serv)
 				AddResource(res)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
+				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			cnt++
 		}

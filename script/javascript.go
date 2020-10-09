@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 
 	"github.com/robertkrimen/otto"
 )
@@ -104,7 +104,8 @@ func NewWithProcessor(processor Processor) *JavaScriptImpl {
 }
 
 func init() {
-	box := packr.NewBox("./")
+
+	box := packr.New("sdk", "./")
 	src, err := box.FindString(sdkFile)
 	if err != nil {
 		log.Fatal(err)
