@@ -1,21 +1,24 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/zfd81/rock/errs"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rock/meta/dai"
+	pb "github.com/zfd81/rock/proto/rockpb"
 )
 
-func CreateDataSource(c *gin.Context) {
-	ds := &meta.DataSource{}
-	err := c.ShouldBind(ds)
+type DataSource struct{}
+
+func (d *DataSource) CreateDataSource(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	var ds meta.DataSource
+	err := json.Unmarshal([]byte(request.Data), &ds)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errs.NewError(err))
-		return
+		return nil, err
 	}
 	//数据源内容监测
 	if ds.Name == "" ||
@@ -25,42 +28,38 @@ func CreateDataSource(c *gin.Context) {
 		ds.User == "" ||
 		ds.Password == "" ||
 		ds.Database == "" {
-		c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "[DataSource information cannot be empty]"))
-		return
+		return nil, fmt.Errorf("Bad parameter %s", "[DataSource information cannot be empty]")
 	}
-	if err = dai.CreateDataSource(ds); err != nil {
-		c.JSON(http.StatusInternalServerError, err)
-		return
+	if err = dai.CreateDataSource(&ds); err != nil {
+		return nil, err
 	}
-	c.JSON(http.StatusOK, ApiResponse{
-		StatusCode: 200,
-		Message:    fmt.Sprintf("DataSource %s created successfully", ds.Name),
-	})
+	return &pb.RpcResponse{
+		Code:    200,
+		Message: fmt.Sprintf("DataSource %s created successfully", ds.Name),
+	}, nil
 }
 
-func DeleteDataSource(c *gin.Context) {
-	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
-	name := c.Param("name")                        //从Path中获得数据源名称
+func (d *DataSource) DeleteDataSource(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	namespace := request.Params["namespace"]
+	name := request.Params["name"]
 	ds := &meta.DataSource{
 		Namespace: namespace,
 		Name:      name,
 	}
 	if err := dai.DeleteDataSource(ds); err != nil {
-		c.JSON(http.StatusInternalServerError, errs.NewError(err))
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, ApiResponse{
-		StatusCode: 200,
-		Message:    fmt.Sprintf("DataSource %s deleted successfully", name),
-	})
+	return &pb.RpcResponse{
+		Code:    200,
+		Message: fmt.Sprintf("DataSource %s deleted successfully", name),
+	}, nil
 }
 
-func ModifyDataSource(c *gin.Context) {
-	ds := &meta.DataSource{}
-	err := c.ShouldBind(ds)
+func (d *DataSource) ModifyDataSource(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	var ds *meta.DataSource
+	err := json.Unmarshal([]byte(request.Data), ds)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errs.NewError(err))
-		return
+		return nil, err
 	}
 	//数据源内容监测
 	if ds.Name == "" ||
@@ -70,45 +69,48 @@ func ModifyDataSource(c *gin.Context) {
 		ds.User == "" ||
 		ds.Password == "" ||
 		ds.Database == "" {
-		c.JSON(http.StatusBadRequest, errs.New(errs.ErrParamBad, "[DataSource information cannot be empty]"))
-		return
+		return nil, fmt.Errorf("Bad parameter %s", "[DataSource information cannot be empty]")
 	}
 	if err = dai.ModifyDataSource(ds); err != nil {
-		c.JSON(http.StatusInternalServerError, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, ApiResponse{
-		StatusCode: 200,
-		Message:    fmt.Sprintf("DataSource %s modified successfully", ds.Name),
-	})
+	return &pb.RpcResponse{
+		Code:    200,
+		Message: fmt.Sprintf("DataSource %s modified successfully", ds.Name),
+	}, nil
 }
 
-func FindDataSource(c *gin.Context) {
-	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
-	name := c.Param("name")                        //从Path中获得数据源名称
+func (d *DataSource) FindDataSource(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	namespace := request.Params["namespace"]
+	name := request.Params["name"]
 	ds, err := dai.GetDataSource(namespace, name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errs.NewError(err))
-		return
+		log.Error("Find datasource error: ", err)
+		return nil, err
 	}
-	c.JSON(http.StatusOK, ApiResponse{
-		StatusCode: 200,
-		Data:       ds,
-	})
+	bytes, err := json.Marshal(ds)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
 }
 
-func ListDataSource(c *gin.Context) {
-	namespace := c.Request.Header.Get("namespace") //从Header中获得命名空间
+func (d *DataSource) ListDataSources(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	namespace := request.Params["namespace"]
 	dses, err := dai.ListDataSource(namespace, "/")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ApiResponse{
-			StatusCode: 500,
-			Message:    err.Error(),
-		})
-		return
+		log.Error("List datasources error: ", err)
+		return nil, err
 	}
-	c.JSON(http.StatusOK, ApiResponse{
-		StatusCode: 200,
-		Data:       dses,
-	})
+	bytes, err := json.Marshal(dses)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
 }

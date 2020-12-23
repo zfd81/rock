@@ -1,9 +1,14 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	pb "github.com/zfd81/rock/proto/rockpb"
 
 	"github.com/zfd81/rock/server"
 
@@ -15,6 +20,88 @@ import (
 	"github.com/zfd81/rock/meta/dai"
 	"github.com/zfd81/rock/script"
 )
+
+type Service struct{}
+
+func (d *Service) TestAnalysis(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	return &pb.RpcResponse{
+		Code: 200,
+	}, nil
+}
+
+func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	return &pb.RpcResponse{
+		Code: 200,
+	}, nil
+}
+
+func (d *Service) CreateService(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	return &pb.RpcResponse{
+		Code: 200,
+	}, nil
+}
+
+func (d *Service) DeleteService(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	return &pb.RpcResponse{
+		Code: 200,
+	}, nil
+}
+
+func (d *Service) ModifyService(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	return &pb.RpcResponse{
+		Code: 200,
+	}, nil
+}
+
+func (d *Service) FindService(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	namespace := request.Params["namespace"]
+	method := request.Params["method"]
+	path := request.Params["path"]
+	m := strings.ToUpper(method)
+	if m != http.MethodGet && m != http.MethodPost &&
+		m != http.MethodPut && m != http.MethodDelete &&
+		m != "LOCAL" {
+		return nil, fmt.Errorf("Method %s not found", method)
+	}
+	serv, err := dai.GetService(namespace, m, path)
+	if err != nil {
+		log.Error("Find service error: ", err)
+		return nil, err
+	}
+	if serv != nil {
+		serv.Source = ""
+	}
+	bytes, err := json.Marshal(serv)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
+}
+
+func (d *Service) ListServices(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
+	namespace := request.Params["namespace"]
+	path := request.Params["path"]
+	servs, err := dai.ListService(namespace, path)
+	if err != nil {
+		log.Error("List services error: ", err)
+		return nil, err
+	}
+	for _, serv := range servs {
+		serv.Source = ""
+	}
+	bytes, err := json.Marshal(servs)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RpcResponse{
+		Code: 200,
+		Data: string(bytes),
+	}, nil
+}
 
 func TestAnalysis(c *gin.Context) {
 	p, err := param(c)

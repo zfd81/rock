@@ -24,7 +24,15 @@ func CreateDataSource(ds *meta.DataSource) error {
 }
 
 func DeleteDataSource(ds *meta.DataSource) error {
-	_, err := etcd.Del(ds.EtcdKey())
+	key := ds.EtcdKey()
+	v, err := etcd.Get(key)
+	if err != nil {
+		return errs.NewError(err)
+	}
+	if v == nil {
+		return errs.New(errs.ErrDsNotExist)
+	}
+	_, err = etcd.Del(key)
 	return err
 }
 

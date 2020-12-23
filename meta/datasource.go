@@ -5,14 +5,14 @@ import (
 )
 
 type DataSource struct {
-	Namespace string `yaml:"namespace"` //命名空间 注:不能包含"/"
-	Name      string `yaml:"name"`
-	Driver    string `yaml:"driver"`
-	Host      string `yaml:"host"`
-	Port      int    `yaml:"port"`
-	User      string `yaml:"user"`
-	Password  string `yaml:"password"`
-	Database  string `yaml:"database"`
+	Namespace string `json:"namespace"` //命名空间 注:不能包含"/"
+	Name      string `json:"name"`
+	Driver    string `json:"driver"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	User      string `json:"user"`
+	Password  string `json:"password"`
+	Database  string `json:"database"`
 }
 
 func (ds *DataSource) EtcdKey() string {

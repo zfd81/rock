@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/zfd81/rock/server/api"
+
+	pb "github.com/zfd81/rock/proto/rockpb"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
@@ -18,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zfd81/rock/rockctl/cmd"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -35,27 +40,38 @@ var (
 func init() {
 	rootCmd.Flags().IntVar(&port, "port", conf.GetConfig().Port, "Port to run the server")
 	rootCmd.Flags().IntVar(&apiPort, "api-port", conf.GetConfig().APIServer.Port, "Port to run the api server")
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05", //时间格式
+	})
+	//log.SetLevel(log.InfoLevel)
 }
 
 func startCommandFunc(cmd *cobra.Command, args []string) {
 	conf.GetConfig().Port = port
 	conf.GetConfig().APIServer.Port = apiPort
-	ApiServer := &http.Server{
-		Addr:         fmt.Sprintf(":%d", conf.GetConfig().APIServer.Port),
-		Handler:      api.Router(),
-		ReadTimeout:  conf.GetConfig().APIServer.ReadTimeout * time.Second,
-		WriteTimeout: conf.GetConfig().APIServer.WriteTimeout * time.Second,
-	}
+
 	ParrotServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", conf.GetConfig().Port),
 		Handler:      server.Router(),
 		ReadTimeout:  conf.GetConfig().ReadTimeout * time.Second,
 		WriteTimeout: conf.GetConfig().WriteTimeout * time.Second,
 	}
+
+	//开启RPC服务
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.GetConfig().APIServer.Port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	serv := grpc.NewServer()
+	pb.RegisterServiceServer(serv, &api.Service{})
+	pb.RegisterDataSourceServer(serv, &api.DataSource{})
+	pb.RegisterClusterServer(serv, &api.ClusterServer{})
+
 	g.Go(func() error {
-		err := ApiServer.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+		err := serv.Serve(lis)
+		if err != nil {
+			log.Fatalf("failed to api serve: %v", err)
 		}
 		return err
 	})
@@ -71,8 +87,9 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	server.InitDbs()                    // 根据元数据初始化数据源
 	server.InitResources()              // 根据元数据初始化资源
 	cluster.Register(time.Now().Unix()) // 集群注册
-	color.Green("[INFO] API server listening on: %d", conf.GetConfig().APIServer.Port)
-	color.Green("[INFO] Rock server listening on: %d", conf.GetConfig().Port)
+	log.Infof("API server started successfully, listening on: %d", conf.GetConfig().APIServer.Port)
+	log.Infof("Rock server started successfully, listening on: %d", conf.GetConfig().Port)
+
 	if err := g.Wait(); err != nil {
 		log.Fatal(err)
 	}

@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+
+	"github.com/zfd81/rock/errs"
 )
 
 const (
@@ -17,6 +19,6 @@ const (
 )
 
 func ExitWithError(code int, err error) {
-	fmt.Fprintln(os.Stderr, "Error:", err)
+	fmt.Fprintln(os.Stderr, "[ERROR]", errs.ErrorStyleFunc(err))
 	os.Exit(code)
 }

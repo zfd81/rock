@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "/rockpb"; // 定义包名
+
+message RpcRequest {
+  map<string, string> params = 1;
+  string data = 2;
+}
+
+message RpcResponse {
+  int32 code = 1;
+  string message = 2;
+  string data = 3;
+}
+
+// 服务管理
+service Service {
+  rpc TestAnalysis(RpcRequest) returns (RpcResponse) {} // 测试分析
+  rpc Test(RpcRequest) returns (RpcResponse) {} // 测试服务
+  rpc CreateService(RpcRequest) returns (RpcResponse) {} // 创建服务
+  rpc DeleteService(RpcRequest) returns (RpcResponse) {} // 删除服务
+  rpc ModifyService(RpcRequest) returns (RpcResponse) {} // 修改服务
+  rpc FindService(RpcRequest) returns (RpcResponse) {} // 查看服务信息
+  rpc ListServices(RpcRequest) returns (RpcResponse) {} // 列出所有服务
+}
+
+// 数据源管理
+service DataSource {
+  rpc CreateDataSource(RpcRequest) returns (RpcResponse) {} // 创建数据源
+  rpc DeleteDataSource(RpcRequest) returns (RpcResponse) {} // 删除数据源
+  rpc ModifyDataSource(RpcRequest) returns (RpcResponse) {} // 修改数据源
+  rpc FindDataSource(RpcRequest) returns (RpcResponse) {} // 查看数据源信息
+  rpc ListDataSources(RpcRequest) returns (RpcResponse) {} // 列出所有数据源
+}
+
+// 集群管理
+service Cluster{
+  rpc ListMembers (RpcRequest) returns (RpcResponse){} // 列出集群所有成员信息
+  rpc MemberStatus (RpcRequest) returns (RpcResponse){} // 查看集群成员状态信息
+}

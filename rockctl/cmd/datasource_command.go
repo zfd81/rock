@@ -2,18 +2,18 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 
+	pb "github.com/zfd81/rock/proto/rockpb"
+
 	"github.com/spf13/cast"
 
-	"github.com/zfd81/rock/http"
-	"github.com/zfd81/rock/meta"
-	"gopkg.in/yaml.v2"
-
 	"github.com/spf13/cobra"
+	"github.com/zfd81/rock/meta"
 )
 
 // NewDataSourceCommand returns the cobra command for "ds".
@@ -75,31 +75,22 @@ func dsAddCommandFunc(cmd *cobra.Command, args []string) {
 		Printerr(prompt)
 		return
 	}
-	yamlFile, err := ioutil.ReadFile(path)
+	definition, err := ioutil.ReadFile(path)
 	if err != nil {
 		Printerr(err.Error())
 		return
 	}
-	ds := &meta.DataSource{}
-	err = yaml.Unmarshal(yamlFile, ds)
+	request := &pb.RpcRequest{}
+	request.Data = string(definition)
+	resp, err := GetDataSourceClient().CreateDataSource(context.Background(), request)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	resp, err := client.Post(url("ds"), "application/json;charset=UTF-8", ds, nil)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	response, err := wrapResponse(resp.Content)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	if response.StatusCode == 200 {
-		Print(response.Message)
+	if resp.Code == 200 {
+		Print(resp.Message)
 	} else {
-		Printerr(response.Message)
+		Errorf(resp.Message)
 	}
 }
 
@@ -108,25 +99,21 @@ func dsDeleteCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("ds del command requires datasource name as its argument"))
 	}
-	name := args[0]
-	header := http.Header{}
+	request := &pb.RpcRequest{}
+	request.Params = map[string]string{}
+	request.Params["name"] = args[0]
 	if len(args) > 1 {
-		header.Set("namespace", args[1])
+		request.Params["namespace"] = cast.ToString(If(args[1] == "default", "", args[1]))
 	}
-	resp, err := client.Delete(url(fmt.Sprintf("ds/name/%s", name)), nil, header)
+	resp, err := GetDataSourceClient().DeleteDataSource(context.Background(), request)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	response, err := wrapResponse(resp.Content)
-	if err != nil {
-		Printerr(err.Error())
-		return
-	}
-	if response.StatusCode == 200 {
-		Print(response.Message)
+	if resp.Code == 200 {
+		Print(resp.Message)
 	} else {
-		Printerr(response.Message)
+		Errorf(resp.Message)
 	}
 }
 
@@ -135,74 +122,58 @@ func dsGetCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		ExitWithError(ExitBadArgs, fmt.Errorf("ds get command requires datasource name as its argument"))
 	}
-	name := args[0]
-	header := http.Header{}
+	request := &pb.RpcRequest{}
+	request.Params = map[string]string{}
+	request.Params["name"] = args[0]
 	if len(args) > 1 {
-		header.Set("namespace", args[1])
+		request.Params["namespace"] = cast.ToString(If(args[1] == "default", "", args[1]))
 	}
-	resp, err := client.Get(url(fmt.Sprintf("ds/name/%s", name)), nil, header)
+	resp, err := GetDataSourceClient().FindDataSource(context.Background(), request)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	response, err := wrapResponse(resp.Content)
+	var ds meta.DataSource
+	err = json.Unmarshal([]byte(resp.Data), &ds)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	if response.StatusCode == 200 {
-		data := response.Data
-		if data != nil {
-			fmt.Printf("DataSource[%s] details:\n", name)
-			ds := data.(map[string]interface{})
-			fmt.Println("-----------------------------------------------------------------------------------------")
-			fmt.Printf("%12s %12s %15s %15s %8s %9s %10s\n", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
-			fmt.Println("-----------------------------------------------------------------------------------------")
-			fmt.Printf("%12s %12s %15s %15s %8s %9s %10s\n", ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
-			fmt.Println("-----------------------------------------------------------------------------------------")
-		} else {
-			Printerr("DataSource " + name + " not found")
-		}
-	} else {
-		Printerr(response.Message)
+	fmt.Println("+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
+	fmt.Printf("%1s %12s %1s %15s %1s %12s %1s %12s %1s %9s %1s %10s %1s %10s %1s\n", "|", "NAMESPACE ", "|", "NAME     ", "|", "DRIVER   ", "|", "HOST    ", "|", "PORT  ", "|", "USER   ", "|", "DATABASE ", "|")
+	fmt.Println("+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
+	if ds.Name != "" {
+		fmt.Printf("%1s %12s %1s %15s %1s %12s %1s %12s %1s %9d %1s %10s %1s %10s %1s\n", "|", If(ds.Namespace == "", "default", ds.Namespace), "|", ds.Name, "|", ds.Driver, "|", ds.Host, "|", ds.Port, "|", ds.User, "|", ds.Database, "|")
 	}
+	fmt.Println("+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
 }
 
 // dsListCommandFunc executes the "ds list" command.
 func dsListCommandFunc(cmd *cobra.Command, args []string) {
-	header := http.Header{}
+	request := &pb.RpcRequest{}
+	request.Params = map[string]string{}
 	if len(args) > 0 {
-		header.Set("namespace", args[0])
+		request.Params["namespace"] = cast.ToString(If(args[0] == "default", "", args[0]))
 	}
-	resp, err := client.Get(url("ds/list"), nil, header)
+	resp, err := GetDataSourceClient().ListDataSources(context.Background(), request)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	response, err := wrapResponse(resp.Content)
+	var dses []meta.DataSource
+	err = json.Unmarshal([]byte(resp.Data), &dses)
 	if err != nil {
-		Printerr(err.Error())
+		Errorf(err.Error())
 		return
 	}
-	if response.StatusCode == 200 {
-		data := response.Data
-		if data != nil {
-			dses, ok := data.([]interface{})
-			if ok {
-				fmt.Println("DataSource list:")
-				fmt.Println("-----------------------------------------------------------------------------------------")
-				fmt.Printf("%2s %12s %15s %10s %15s %8s %8s %10s\n", "", "Namespace", "Name", "Driver", "Host", "Port", "User", "Database")
-				fmt.Println("-----------------------------------------------------------------------------------------")
-				for i, v := range dses {
-					ds := v.(map[string]interface{})
-					fmt.Printf("%2d %12s %15s %10s %15s %8s %8s %10s\n", i, ds["Namespace"], ds["Name"], ds["Driver"], ds["Host"], cast.ToString(ds["Port"]), ds["User"], ds["Database"])
-				}
-				fmt.Println("-----------------------------------------------------------------------------------------")
-			}
-		}
-	} else {
-		Printerr(response.Message)
+	fmt.Println("+-------+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
+	fmt.Printf("%1s %5s %1s %12s %1s %15s %1s %12s %1s %12s %1s %9s %1s %10s %1s %10s %1s\n", "|", "SEQ ", "|", "NAMESPACE ", "|", "NAME     ", "|", "DRIVER   ", "|", "HOST    ", "|", "PORT  ", "|", "USER   ", "|", "DATABASE ", "|")
+	fmt.Println("+-------+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
+	for i, ds := range dses {
+		fmt.Printf("%1s %5d %1s %12s %1s %15s %1s %12s %1s %12s %1s %9d %1s %10s %1s %10s %1s\n", "|", i+1, "|", If(ds.Namespace == "", "default", ds.Namespace), "|", ds.Name, "|", ds.Driver, "|", ds.Host, "|", ds.Port, "|", ds.User, "|", ds.Database, "|")
 	}
+	fmt.Println("+-------+--------------+-----------------+--------------+--------------+-----------+------------+------------+")
+
 }
 
 func FormatJSON(str string) (string, error) {
