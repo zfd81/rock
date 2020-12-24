@@ -27,11 +27,16 @@ func CreateService(serv *meta.Service) error {
 }
 
 func DeleteService(serv *meta.Service) error {
-	_, err := etcd.Del(serv.EtcdKey())
+	key := serv.EtcdKey()
+	v, err := etcd.Get(key)
 	if err != nil {
 		return errs.NewError(err)
 	}
-	return nil
+	if v == nil {
+		return errs.New(errs.ErrServNotExist)
+	}
+	_, err = etcd.Del(key)
+	return err
 }
 
 func ModifyService(serv *meta.Service) error {

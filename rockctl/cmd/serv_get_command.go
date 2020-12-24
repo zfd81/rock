@@ -50,6 +50,8 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 	fmt.Println("+--------------+-----------+----------------------------------------------------+")
 	fmt.Printf("%1s %12s %1s %9s %1s %50s %1s\n", "|", "NAMESPACE ", "|", "METHOD ", "|", "PATH                        ", "|")
 	fmt.Println("+--------------+-----------+----------------------------------------------------+")
-	fmt.Printf("%1s %12s %1s %9s %1s %50s %1s\n", "|", If(serv.Namespace == "", "default", serv.Namespace), "|", serv.Method, "|", serv.Path, "|")
+	if serv.Name != "" {
+		fmt.Printf("%1s %12s %1s %9s %1s %50s %1s\n", "|", If(serv.Namespace == "", "default", serv.Namespace), "|", serv.Method, "|", serv.Path, "|")
+	}
 	fmt.Println("+--------------+-----------+----------------------------------------------------+")
 }

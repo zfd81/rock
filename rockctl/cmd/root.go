@@ -1,13 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/zfd81/rock/errs"
-
-	"github.com/zfd81/rock/server/api"
 
 	"github.com/spf13/cobra"
 )
@@ -39,10 +36,12 @@ func init() {
 
 	rootCmd.AddCommand(
 		NewVersionCommand(),
+		NewTestCommand(),
+		NewAddCommand(),
+		NewDeleteCommand(),
+		NewChangeCommand(),
 		NewGetCommand(),
 		NewListCommand(),
-		NewTestCommand(),
-		NewServCommand(),
 		NewDataSourceCommand(),
 	)
 }
@@ -51,14 +50,6 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		ExitWithError(ExitError, err)
 	}
-}
-
-func wrapResponse(content string) (*api.ApiResponse, error) {
-	resp := &api.ApiResponse{}
-	if err := json.Unmarshal([]byte(content), resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
 func Printerr(msg string) {
