@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	pb "github.com/zfd81/rock/proto/rockpb"
 
 	"github.com/fatih/color"
 
@@ -38,97 +41,69 @@ func testCommandFunc(cmd *cobra.Command, args []string) {
 	path := args[0]
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
-		prompt := fmt.Sprintf("open %s: No such file", path)
-		fmt.Println("[ERROR]", prompt)
+		Errorf("open %s: No such file", path)
 		return
 	}
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println("[ERROR]", err)
+		Errorf(err.Error())
+		return
 	}
-	params := map[string]interface{}{
-		"name":   info.Name(),
-		"source": string(source),
+
+	request := &pb.RpcRequest{
+		Header: map[string]string{"name": info.Name()},
+		Data:   string(source),
 	}
-	resp, err := client.Post(url("test/analysis"), "application/json;charset=UTF-8", params, nil)
+	resp, err := GetServiceClient().TestAnalysis(context.Background(), request)
 	if err != nil {
-		fmt.Println("[ERROR]", err)
-	}
-	if resp.StatusCode != 200 {
-		data := map[string]interface{}{}
-		err = json.Unmarshal([]byte(resp.Content), &data)
-		if err != nil {
-			fmt.Println("[ERROR]", err)
-		} else {
-			fmt.Println("[ERROR] code:", data["code"])
-			fmt.Println("[ERROR] message:", data["msg"], "\n")
-		}
+		Errorf(err.Error())
 		return
 	}
 
 	serv := &meta.Service{}
-	err = json.Unmarshal([]byte(resp.Content), &serv)
+	err = json.Unmarshal([]byte(resp.Data), &serv)
 	if err != nil {
-		fmt.Println("[ERROR]", err)
+		Errorf(err.Error())
+		return
 	}
-	ps := map[string]interface{}{}
+
+	ps := map[string]string{}
 	util.ReplaceBetween(serv.Path, "{", "}", func(i int, s int, e int, c string) (string, error) {
 		name := strings.TrimSpace(c)
 		v := readParameterInteractive(name)
 		ps[name] = v
 		return "", nil
 	})
+
 	for _, param := range serv.Params {
 		v := readParameterInteractive(param.Name)
-		if strings.ToUpper(param.DataType) == meta.DataTypeMap {
-			m := map[string]interface{}{}
-			if err := json.Unmarshal([]byte(v), &m); err != nil {
-				Printerr("Parameter[" + param.Name + "] data type error")
-				return
-			}
-			ps[param.Name] = m
-		} else {
-			ps[param.Name] = v
-		}
+		ps[param.Name] = v
 	}
-	params["params"] = ps
-	resp, err = client.Post(url("test"), "application/json;charset=UTF-8", params, nil)
+	request.Params = ps
+
+	resp, err = GetServiceClient().Test(context.Background(), request)
 	if err != nil {
-		fmt.Println("[ERROR]", err)
+		Errorf(err.Error())
 		return
 	}
-
-	data := map[string]interface{}{}
-	err = json.Unmarshal([]byte(resp.Content), &data)
-	if err != nil {
-		fmt.Println("[ERROR]", err)
-	} else {
-		fmt.Println("")
-		color.Green("Service Definition:")
-		fmt.Println("[NAMESPACE]", serv.Namespace)
-		fmt.Println("[PATH]", serv.Path)
-		fmt.Println("[METHOD]", serv.Method)
-		color.Green("Execution Results:")
-		fmt.Print(data["log"])
-		if resp.StatusCode == 200 {
-			bytes, err := json.Marshal(data["header"])
-			if err != nil {
-				fmt.Println("[HEADER]", data["header"])
-			} else {
-				if string(bytes) != "{}" {
-					fmt.Println("[HEADER]", string(bytes))
-				}
-			}
-			bytes, err = json.Marshal(data["data"])
-			if err != nil {
-				fmt.Println("[DATA]", data["data"])
-			} else {
-				if string(bytes) != "null" {
-					fmt.Println("[DATA]", string(bytes))
-				}
-			}
+	fmt.Println("")
+	color.Green("Service Definition:")
+	fmt.Println("[NAMESPACE]", If(serv.Namespace == "", "default", serv.Namespace))
+	fmt.Println("[PATH]", serv.Path)
+	fmt.Println("[METHOD]", serv.Method)
+	fmt.Println("")
+	color.Green("Execution Results:")
+	if len(resp.Header) > 0 {
+		bytes, err := json.Marshal(resp.Header)
+		if err != nil {
+			Errorf(err.Error())
 		}
+		fmt.Println("[HEADER]", string(bytes))
 	}
+	fmt.Println("[DATA]", resp.Data)
+	fmt.Println("")
+	color.Green("Execution Logs:")
+	fmt.Println(resp.Message)
 	fmt.Println("Test complete.", "\n")
 }
 

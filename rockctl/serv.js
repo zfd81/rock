@@ -1,31 +1,20 @@
 
 $.define({
     path: "zfd/{name}/{password}/",
-    method: "get"
+    method: "get",
+    params: [{
+        name: "user",
+        dataType: "map"
+    }]
 })
 
-var util = require("comm/util")
-$.log(util.add(2,3))
-$.log(util.left("helloworld",3))
-$.log(util.right("helloworld",3))
-util.print("hello world!!!")
-$.post("http://localhost:8080/login", {
-    name: name,
-    password: password
-}, {})
-    .then(function (data, header) {
-        $.get("http://localhost:8080/auth/das/test/{name}", {
-            name: data.name
-        }, {
-            zxcvb: header["Atv"]
-        })
-            .then(function (data) {
-                $.log("aaa")
+var m = {
+    name:name,
+    pwd:password
+}
+$.log(123)
+$.log("hello")
+$.log(m)
+
                 var obj = {name:"zfd",pwd:"password"}
-                $.resp.write(data,obj)
-            });
-    })
-    .catch(function (status, data) {
-        $.log(status)
-        $.log(JSON.stringify(data))
-    });
+                $.resp.write(m,user)

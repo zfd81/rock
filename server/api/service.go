@@ -23,15 +23,64 @@ import (
 
 type Service struct{}
 
-func (d *Service) TestAnalysis(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
-	return &pb.RpcResponse{
-		Code: 200,
+func (d *Service) TestAnalysis(ctx context.Context, request *pb.RpcRequest) (*pb.ServResponse, error) {
+	name := request.Header["name"]
+	source := request.Data
+	serv, err := SourceAnalysis(source)
+	if err != nil {
+		return nil, fmt.Errorf("Bad parameter %s", err.Error())
+	}
+	serv.Name = name
+	bytes, err := json.Marshal(serv)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ServResponse{
+		Data: string(bytes),
 	}, nil
 }
 
-func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.RpcResponse, error) {
-	return &pb.RpcResponse{
-		Code: 200,
+func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.ServResponse, error) {
+	source := request.Data
+	serv, err := SourceAnalysis(source)
+	if err != nil {
+		return nil, fmt.Errorf("Bad syntax %s", err.Error())
+	}
+	serv.Name = request.Header["name"]
+	serv.Source = source
+
+	if serv.Method == "LOCAL" {
+
+	}
+
+	res := core.NewResource(serv)
+	if len(request.Params) > 0 {
+		for _, param := range res.GetPathParams() {
+			param.SetValue(request.Params[param.Name])
+		}
+		for _, param := range res.GetRequestParams() {
+			val, found := request.Params[param.Name]
+			if !found {
+				return nil, fmt.Errorf("Parameter %s not found", param.Name)
+			}
+			if err = param.SetValue(val); err != nil {
+				return nil, fmt.Errorf("Bad parameter %s data type error", param.Name)
+			}
+		}
+	}
+	res.SetContext(server.NewContext(res.GetNamespace()))
+	log, resp, err := res.Run()
+	if err != nil {
+		return nil, fmt.Errorf(log)
+	}
+	bytes, err := json.Marshal(resp.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ServResponse{
+		Message: log,
+		Header:  resp.Header,
+		Data:    string(bytes),
 	}, nil
 }
 

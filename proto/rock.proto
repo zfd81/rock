@@ -4,7 +4,8 @@ option go_package = "/rockpb"; // 定义包名
 
 message RpcRequest {
   map<string, string> params = 1;
-  string data = 2;
+  map<string, string> header = 2;
+  string data = 3;
 }
 
 message RpcResponse {
@@ -13,10 +14,17 @@ message RpcResponse {
   string data = 3;
 }
 
+message ServResponse {
+  int32 code = 1;
+  string message = 2;
+  map<string, string> header = 3;
+  string data = 4;
+}
+
 // 服务管理
 service Service {
-  rpc TestAnalysis(RpcRequest) returns (RpcResponse) {} // 测试分析
-  rpc Test(RpcRequest) returns (RpcResponse) {} // 测试服务
+  rpc TestAnalysis(RpcRequest) returns (ServResponse) {} // 测试分析
+  rpc Test(RpcRequest) returns (ServResponse) {} // 测试服务
   rpc CreateService(RpcRequest) returns (RpcResponse) {} // 创建服务
   rpc DeleteService(RpcRequest) returns (RpcResponse) {} // 删除服务
   rpc ModifyService(RpcRequest) returns (RpcResponse) {} // 修改服务
