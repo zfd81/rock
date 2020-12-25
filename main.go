@@ -51,7 +51,11 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	conf.GetConfig().Port = port
 	conf.GetConfig().APIServer.Port = apiPort
 
-	ParrotServer := &http.Server{
+	//打印配置信息
+	log.Info("Rock version: ", conf.GetConfig().Version)
+	log.Info("Rock etcd endpoints: ", conf.GetConfig().Etcd.Endpoints)
+
+	RockServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", conf.GetConfig().Port),
 		Handler:      server.Router(),
 		ReadTimeout:  conf.GetConfig().ReadTimeout * time.Second,
@@ -76,7 +80,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 		return err
 	})
 	g.Go(func() error {
-		err := ParrotServer.ListenAndServe()
+		err := RockServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
@@ -87,6 +91,7 @@ func startCommandFunc(cmd *cobra.Command, args []string) {
 	server.InitDbs()                    // 根据元数据初始化数据源
 	server.InitResources()              // 根据元数据初始化资源
 	cluster.Register(time.Now().Unix()) // 集群注册
+	time.Sleep(time.Duration(1) * time.Second)
 	log.Infof("API server started successfully, listening on: %d", conf.GetConfig().APIServer.Port)
 	log.Infof("Rock server started successfully, listening on: %d", conf.GetConfig().Port)
 
