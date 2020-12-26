@@ -1,14 +1,16 @@
-package script
+package otto
 
 import (
 	"log"
 	"strings"
 
-	"github.com/robertkrimen/otto"
+	"github.com/zfd81/rock/script"
+
+	js "github.com/robertkrimen/otto"
 	"github.com/zfd81/rock/http"
 )
 
-func HttpGet(call otto.FunctionCall) (value otto.Value) {
+func HttpGet(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}
@@ -41,7 +43,7 @@ func HttpGet(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func HttpPost(call otto.FunctionCall) (value otto.Value) {
+func HttpPost(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}
@@ -74,7 +76,7 @@ func HttpPost(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func HttpDelete(call otto.FunctionCall) (value otto.Value) {
+func HttpDelete(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}
@@ -107,7 +109,7 @@ func HttpDelete(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func HttpPut(call otto.FunctionCall) (value otto.Value) {
+func HttpPut(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
 	var data map[string]interface{}
 	var header map[string]interface{}
@@ -140,8 +142,8 @@ func HttpPut(call otto.FunctionCall) (value otto.Value) {
 	return
 }
 
-func RespWrite(process Processor) func(call otto.FunctionCall) otto.Value {
-	return func(call otto.FunctionCall) otto.Value {
+func RespWrite(process script.Processor) func(call js.FunctionCall) js.Value {
+	return func(call js.FunctionCall) js.Value {
 		var data interface{}
 		var err error
 
@@ -189,6 +191,6 @@ func RespWrite(process Processor) func(call otto.FunctionCall) otto.Value {
 				}
 			}
 		}
-		return otto.Value{}
+		return js.Value{}
 	}
 }

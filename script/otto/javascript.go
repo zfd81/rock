@@ -1,12 +1,14 @@
-package script
+package otto
 
 import (
 	"bytes"
 	"log"
 
+	"github.com/zfd81/rock/script"
+
 	"github.com/gobuffalo/packr/v2"
 
-	"github.com/robertkrimen/otto"
+	js "github.com/robertkrimen/otto"
 )
 
 var (
@@ -14,11 +16,13 @@ var (
 	sdkSource []byte
 )
 
+type Function func(call js.FunctionCall) js.Value
+
 type JavaScriptImpl struct {
-	vm        *otto.Otto
+	vm        *js.Otto
 	sdk       string
 	script    *bytes.Buffer
-	processor Processor
+	processor script.Processor
 }
 
 func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
@@ -46,10 +50,8 @@ func (se *JavaScriptImpl) GetVar(name string) (interface{}, error) {
 	return nil, nil
 }
 
-func (se *JavaScriptImpl) AddFunc(name string, function Function) error {
-	return se.vm.Set(name, func(call otto.FunctionCall) otto.Value {
-		return function(call)
-	})
+func (se *JavaScriptImpl) AddFunc(name string, function interface{}) error {
+	return se.vm.Set(name, function)
 }
 
 func (se *JavaScriptImpl) GetSdk() string {
@@ -73,17 +75,17 @@ func (se *JavaScriptImpl) Run() (err error) {
 
 func New() *JavaScriptImpl {
 	se := &JavaScriptImpl{
-		vm:     otto.New(),
+		vm:     js.New(),
 		sdk:    string(sdkSource),
 		script: bytes.NewBufferString(""),
 	}
-	se.AddFunc("require", func(call otto.FunctionCall) otto.Value {
-		return otto.Value{}
+	se.AddFunc("require", func(call js.FunctionCall) js.Value {
+		return js.Value{}
 	})
 	return se
 }
 
-func NewWithProcessor(processor Processor) *JavaScriptImpl {
+func NewWithProcessor(processor script.Processor) *JavaScriptImpl {
 	se := New()
 	se.processor = processor
 	se.AddFunc("_http_get", HttpGet)

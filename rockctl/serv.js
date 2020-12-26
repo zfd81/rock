@@ -1,6 +1,6 @@
 
 $.define({
-    path: "zfd/{name}/{password}/",
+    path: "zfd/{name}/{password}/1",
     method: "get",
     params: [{
         name: "user",

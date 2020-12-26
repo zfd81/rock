@@ -14,9 +14,9 @@ var sql = "SELECT \
                 phone_number, \
                 email, \
                 creator, \
-                DATE_FORMAT(created_time, '%Y-%m-%d %H\\:%i') AS created_time, \
+                DATE_FORMAT(created_time, '%Y-%m-%d %H\\:%i\\:%s') AS created_time, \
                 modifier, \
-                DATE_FORMAT(modified_time, '%Y-%m-%d %H\\:%i') AS modified_time \
+                DATE_FORMAT(modified_time, '%Y-%m-%d %H\\:%i\\:%s') AS modified_time \
             FROM \
                 das_sys_user \
             WHERE \

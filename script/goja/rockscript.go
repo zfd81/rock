@@ -1,11 +1,12 @@
-package script
+package goja
 
 import (
 	"bytes"
 	"fmt"
 	"reflect"
 
-	"github.com/dop251/goja"
+	"github.com/zfd81/rock/script"
+
 	js "github.com/dop251/goja"
 )
 
@@ -13,7 +14,7 @@ type rockscript struct {
 	vm        *js.Runtime
 	sdk       string
 	script    *bytes.Buffer
-	processor Processor
+	processor script.Processor
 }
 
 func (r *rockscript) AddVar(name string, value interface{}) error {
@@ -100,8 +101,8 @@ func (se *rockscript) Run() (err error) {
 
 func NewRockScript() *rockscript {
 	se := &rockscript{
-		vm:     goja.New(),
-		sdk:    string(sdkSource),
+		vm:     js.New(),
+		sdk:    string(""),
 		script: bytes.NewBufferString(""),
 	}
 	return se
