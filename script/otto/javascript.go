@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/zfd81/rock/script"
+	"github.com/zfd81/rock/core"
+
+	"github.com/zfd81/rock/errs"
 
 	"github.com/gobuffalo/packr/v2"
 
@@ -13,16 +15,43 @@ import (
 
 var (
 	sdkFile   = "sdk.js"
-	sdkSource []byte
+	sdkSource string
 )
 
 type Function func(call js.FunctionCall) js.Value
+
+type FuncResult struct {
+	Normal     bool        `json:"-"`
+	StatusCode int         `json:"code"`
+	Data       interface{} `json:"data"`
+	Message    string      `json:"msg"`
+}
+
+func Result(call js.FunctionCall, data interface{}) (value js.Value) {
+	result := &FuncResult{
+		Normal:     true,
+		StatusCode: 200,
+		Data:       data,
+	}
+	value, _ = call.Otto.ToValue(result)
+	return
+}
+
+func ErrorResult(call js.FunctionCall, err string) (value js.Value) {
+	result := &FuncResult{
+		Normal:     false,
+		StatusCode: 400,
+		Message:    errs.ErrorStyleFunc(err),
+	}
+	value, _ = call.Otto.ToValue(result)
+	return
+}
 
 type JavaScriptImpl struct {
 	vm        *js.Otto
 	sdk       string
 	script    *bytes.Buffer
-	processor script.Processor
+	processor core.Processor
 }
 
 func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
@@ -54,6 +83,9 @@ func (se *JavaScriptImpl) AddFunc(name string, function interface{}) error {
 	return se.vm.Set(name, function)
 }
 
+func (se *JavaScriptImpl) CallFunc(name string, args ...interface{}) (interface{}, error) {
+	return nil, nil
+}
 func (se *JavaScriptImpl) GetSdk() string {
 	return se.sdk
 }
@@ -85,7 +117,7 @@ func New() *JavaScriptImpl {
 	return se
 }
 
-func NewWithProcessor(processor script.Processor) *JavaScriptImpl {
+func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
 	se := New()
 	se.processor = processor
 	se.AddFunc("_http_get", HttpGet)
@@ -105,12 +137,15 @@ func NewWithProcessor(processor script.Processor) *JavaScriptImpl {
 	return se
 }
 
-func init() {
+func GetSdk() string {
+	return sdkSource
+}
 
+func init() {
 	box := packr.New("sdk", "./")
 	src, err := box.FindString(sdkFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	sdkSource = []byte(src)
+	sdkSource = src
 }

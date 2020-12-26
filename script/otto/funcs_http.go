@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/zfd81/rock/script"
+	"github.com/zfd81/rock/core"
 
 	js "github.com/robertkrimen/otto"
 	"github.com/zfd81/rock/http"
@@ -142,7 +142,7 @@ func HttpPut(call js.FunctionCall) (value js.Value) {
 	return
 }
 
-func RespWrite(process script.Processor) func(call js.FunctionCall) js.Value {
+func RespWrite(process core.Processor) func(call js.FunctionCall) js.Value {
 	return func(call js.FunctionCall) js.Value {
 		var data interface{}
 		var err error

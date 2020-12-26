@@ -1,10 +1,14 @@
-package core
+package server
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/zfd81/rock/script"
+
+	"github.com/zfd81/rock/core"
 
 	"github.com/zfd81/rock/errs"
 
@@ -15,7 +19,6 @@ import (
 	"github.com/zfd81/rock/meta"
 
 	"github.com/zfd81/rock/http"
-	"github.com/zfd81/rock/script"
 )
 
 const (
@@ -24,20 +27,20 @@ const (
 )
 
 type Context interface {
-	GetModule(path string) script.Module
-	GetDataSource(name string) script.DB
+	GetModule(path string) core.Module
+	GetDataSource(name string) core.DB
 }
 
 type ParrotResource struct {
-	namespace     string              //命名空间 注:不能包含"/"
-	context       Context             //上下文
-	se            script.ScriptEngine // 脚本引擎
-	method        string              // 资源请求方法
-	path          string              // 资源原始路径
-	regexPath     string              // 正则表达式形式路径
-	level         int                 // 资源级别
-	pathParams    []*meta.Parameter   // 路径参数
-	requestParams []*meta.Parameter   // 请求参数
+	namespace     string            //命名空间 注:不能包含"/"
+	context       Context           //上下文
+	se            core.Script       // 脚本引擎
+	method        string            // 资源请求方法
+	path          string            // 资源原始路径
+	regexPath     string            // 正则表达式形式路径
+	level         int               // 资源级别
+	pathParams    []*meta.Parameter // 路径参数
+	requestParams []*meta.Parameter // 请求参数
 	log           *bytes.Buffer
 	resp          *http.Response
 }
@@ -85,11 +88,11 @@ func (r *ParrotResource) GetNamespace() string {
 	return r.namespace
 }
 
-func (r *ParrotResource) SelectModule(path string) script.Module {
+func (r *ParrotResource) SelectModule(path string) core.Module {
 	return r.context.GetModule(path)
 }
 
-func (r *ParrotResource) SelectDataSource(name string) script.DB {
+func (r *ParrotResource) SelectDataSource(name string) core.DB {
 	return r.context.GetDataSource(name)
 }
 

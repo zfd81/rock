@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zfd81/rock/script"
+
 	log "github.com/sirupsen/logrus"
 	pb "github.com/zfd81/rock/proto/rockpb"
 
 	"github.com/zfd81/rock/server"
 
 	"github.com/spf13/cast"
-	"github.com/zfd81/rock/core"
 	"github.com/zfd81/rock/errs"
 	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rock/meta/dai"
-	"github.com/zfd81/rock/script"
 )
 
 type Service struct{}
@@ -52,7 +52,7 @@ func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.ServRes
 
 	}
 
-	res := core.NewResource(serv)
+	res := server.NewResource(serv)
 	if len(request.Params) > 0 {
 		for _, param := range res.GetPathParams() {
 			param.SetValue(request.Params[param.Name])
@@ -261,7 +261,7 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 func ModuleAnalysis(source string) (*meta.Service, error) {
 	serv := &meta.Service{}
 	se := script.New()
-	se.AddScript(se.GetSdk())
+	se.AddScript(script.GetSdk())
 	se.AddScript("var exports={};")
 	se.AddScript(source)
 	err := se.Run()

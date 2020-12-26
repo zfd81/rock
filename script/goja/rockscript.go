@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/zfd81/rock/script"
+	"github.com/zfd81/rock/core"
 
 	js "github.com/dop251/goja"
 )
@@ -14,7 +14,7 @@ type rockscript struct {
 	vm        *js.Runtime
 	sdk       string
 	script    *bytes.Buffer
-	processor script.Processor
+	processor core.Processor
 }
 
 func (r *rockscript) AddVar(name string, value interface{}) error {

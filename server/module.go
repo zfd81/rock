@@ -1,4 +1,4 @@
-package core
+package server
 
 import (
 	"github.com/zfd81/rock/meta"

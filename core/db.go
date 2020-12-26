@@ -9,20 +9,20 @@ import (
 	"github.com/zfd81/rooster/rsql"
 )
 
-type ParrotDB struct {
+type RockDB struct {
 	namespace string
 	Name      string
 	*rsql.DB
 }
 
-func (d *ParrotDB) GetNamespace() string {
+func (d *RockDB) GetNamespace() string {
 	if d.namespace == "" {
 		return meta.DefaultNamespace
 	}
 	return d.namespace
 }
 
-func NewDB(ds *meta.DataSource) (*ParrotDB, error) {
+func NewDB(ds *meta.DataSource) (*RockDB, error) {
 	var driverName, dsn string
 	if strings.ToLower(ds.Driver) == "mysql" {
 		driverName = "mysql"
@@ -32,7 +32,7 @@ func NewDB(ds *meta.DataSource) (*ParrotDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ParrotDB{
+	return &RockDB{
 		namespace: ds.Namespace,
 		Name:      ds.Name,
 		DB:        db,
