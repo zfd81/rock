@@ -1,6 +1,7 @@
 package meta
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -44,20 +45,27 @@ func (p *Parameter) SetValue(value interface{}) error {
 	} else if strings.ToUpper(p.DataType) == DataTypeIntegerArray {
 		val, err = cast.ToIntSliceE(value)
 	} else if strings.ToUpper(p.DataType) == DataTypeMapArray {
-		v, ok := value.([]interface{})
+		v, ok := value.(string)
 		if ok {
-			arr := []map[string]interface{}{}
-			for _, item := range v {
-				m, ok := item.(map[string]interface{})
-				if ok {
-					arr = append(arr, m)
-				} else {
-					return fmt.Errorf("unable to cast %#v of type %T to map[]", v, v)
-				}
-			}
-			val = arr
+			var _val []map[string]interface{}
+			err = json.Unmarshal([]byte(v), &_val)
+			val = _val
 		} else {
-			err = fmt.Errorf("unable to cast %#v of type %T to map[]", v, v)
+			v, ok := value.([]interface{})
+			if ok {
+				arr := []map[string]interface{}{}
+				for _, item := range v {
+					m, ok := item.(map[string]interface{})
+					if ok {
+						arr = append(arr, m)
+					} else {
+						return fmt.Errorf("unable to cast %#v of type %T to map[]", v, v)
+					}
+				}
+				val = arr
+			} else {
+				err = fmt.Errorf("unable to cast %#v of type %T to map[]", v, v)
+			}
 		}
 	}
 	p.value = val

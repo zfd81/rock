@@ -21,19 +21,35 @@ var $ = {
         }
     },
     DB: {
+        Result: {
+            create: function () {
+                var result = {
+                    status: false,
+                    data: undefined,
+                    msg: "",
+                    setVal: function (val) {
+                        this.data = val;
+                        this.status = true;
+                    },
+                    setMsg: function (msg) {
+                        this.msg = msg;
+                    }
+                }
+                return result
+            }
+        },
         DBPromise: {
             create: function (result) {
                 var promise = {
-                    status: result["StatusCode"] == 200,
                     then: function (func) {
-                        if (this.status) {
-                            func(result["Data"]);
+                        if (result.status) {
+                            func(result.data);
                         }
                         return this
                     },
                     catch: function (func) {
-                        if (!this.status) {
-                            func(result["Message"]);
+                        if (!result.status) {
+                            func(result.msg);
                         }
                     }
                 }
@@ -43,19 +59,74 @@ var $ = {
         open: function (name) {
             var db = {
                 query: function (sql, arg, pageNumber, pageSize) {
-                    var result = _db_query(name, sql, arg, pageNumber, pageSize);
+                    if (sql == undefined) {
+                        sql = "";
+                    }
+                    if (arg == undefined) {
+                        arg = {};
+                    }
+                    if (pageNumber == undefined) {
+                        pageNumber = 0;
+                    }
+                    if (pageSize == undefined) {
+                        pageSize = 10;
+                    }
+                    var result = $.DB.Result.create();
+                    try {
+                        result.setVal(_db_query(name, sql, arg, pageNumber, pageSize));
+                    } catch (err) {
+                        result.setMsg(err);
+                        console.log(err);
+                    }
                     return $.DB.DBPromise.create(result);
                 },
                 queryOne: function (sql, arg) {
-                    var result = _db_queryOne(name, sql, arg);
+                    if (sql == undefined) {
+                        sql = "";
+                    }
+                    if (arg == undefined) {
+                        arg = {};
+                    }
+                    var result = $.DB.Result.create();
+                    try {
+                        result.setVal(_db_queryOne(name, sql, arg));
+                    } catch (err) {
+                        result.setMsg(err);
+                        console.log(err);
+                    }
                     return $.DB.DBPromise.create(result);
                 },
                 save: function (table, arg) {
-                    var result = _db_save(name, table, arg);
+                    var result = $.DB.Result.create();
+                    try {
+                        if (table == undefined || table == "") {
+                            result.setMsg("Table name cannot be empty")
+                            console.log("Table name cannot be empty")
+                        } else if (arg == undefined || typeof arg != "object") {
+                            result.setMsg("Parameter data type error")
+                            console.log("Parameter data type error")
+                        } else {
+                            result.setVal(_db_save(name, table, arg));
+                        }
+                    } catch (err) {
+                        result.setMsg(err);
+                        console.log(err);
+                    }
                     return $.DB.DBPromise.create(result);
                 },
                 exec: function (sql, arg) {
-                    var result = _db_exec(name, sql, arg);
+                    var result = $.DB.Result.create();
+                    try {
+                        if (sql == undefined || sql == "") {
+                            result.setMsg("SQL statement cannot be empty")
+                            console.log("SQL statement cannot be empty")
+                        } else {
+                            result.setVal(_db_exec(name, sql, arg));
+                        }
+                    } catch (err) {
+                        result.setMsg(err);
+                        console.log(err);
+                    }
                     return $.DB.DBPromise.create(result);
                 },
             }

@@ -2,6 +2,7 @@ package otto
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 
 	"github.com/zfd81/rock/core"
@@ -139,6 +140,12 @@ func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
 
 func GetSdk() string {
 	return sdkSource
+}
+
+func throwException(format string, msgs ...interface{}) {
+	err := fmt.Sprintf(format, msgs...)
+	exception, _ := js.ToValue(err)
+	panic(exception)
 }
 
 func init() {

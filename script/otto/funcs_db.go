@@ -4,216 +4,116 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/zfd81/rock/core"
+	"github.com/zfd81/rooster/types/container"
 
-	js "github.com/robertkrimen/otto"
+	"github.com/zfd81/rock/core"
 )
 
-func DBQuery(env core.Environment) func(call js.FunctionCall) js.Value {
-	return func(call js.FunctionCall) (value js.Value) {
-		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
-		db := env.SelectDataSource(name)                     //获取数据源DB
+func DBQuery(env core.Environment) func(datasource string, query string, arg interface{}, pageNumber int, pageSize int) []container.Map {
+	return func(datasource string, query string, arg interface{}, pageNumber int, pageSize int) []container.Map {
+		db := env.SelectDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
-			return ErrorResult(call, "Data source["+name+"] not found")
+			throwException("Data source[%s] not found", datasource)
 		}
-		sql_v := call.Argument(1)
-		if !sql_v.IsString() {
-			return ErrorResult(call, "SQL statement cannot be empty")
+		sql := strings.TrimSpace(query) //获取SQL
+		if sql == "" {
+			throwException("SQL statement cannot be empty")
 		}
-		sql := strings.TrimSpace(sql_v.String()) //获取SQL
-		var arg interface{}
-		pageNumber := -1 //当前页码
-		pageSize := 10   //页面数据量
-		arg_v := call.Argument(2)
-		if arg_v.IsObject() {
-			arg_v, err := arg_v.Export()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsString() {
-			arg_v, err := arg_v.ToString()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsNumber() {
-			arg_int, err := arg_v.ToInteger()
-			if err == nil {
-				arg = arg_int
-			} else {
-				arg_float, err := arg_v.ToFloat()
-				if err != nil {
-					return ErrorResult(call, err.Error())
-				}
-				arg = arg_float
-			}
-		}
-		pageNumber_v := call.Argument(3)
-		if pageNumber_v.IsDefined() {
-			if !pageNumber_v.IsNumber() && !pageNumber_v.IsString() {
-				return ErrorResult(call, "Parameter pageNumber data type error")
-			}
-			pageNumber_v, err := pageNumber_v.ToInteger()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			pageNumber = int(pageNumber_v)
-			pageSize_v := call.Argument(4)
-			if pageSize_v.IsNumber() || pageSize_v.IsString() {
-				pageSize_v, err := pageSize_v.ToInteger()
-				if err != nil {
-					return ErrorResult(call, err.Error())
-				}
-				pageSize = int(pageSize_v)
+		if pageNumber > 0 {
+			if pageSize < 1 {
+				pageSize = 10
 			}
 			l, err := db.QueryMapList(sql, arg, pageNumber, pageSize)
 			if err != nil {
-				return ErrorResult(call, err.Error())
+				throwException(err.Error())
 			}
-			return Result(call, l)
+			return l
 		} else {
 			r, err := db.Query(sql, arg)
 			if err != nil {
-				return ErrorResult(call, err.Error())
+				throwException(err.Error())
 			}
 			l, err := r.MapListScan()
 			if err != nil {
-				return ErrorResult(call, err.Error())
+				throwException(err.Error())
 			}
-			return Result(call, l)
+			return l
 		}
-		return
 	}
 }
 
-func DBQueryOne(env core.Environment) func(call js.FunctionCall) js.Value {
-	return func(call js.FunctionCall) (value js.Value) {
-		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
-		db := env.SelectDataSource(name)                     //获取数据源DB
+func DBQueryOne(env core.Environment) func(datasource string, query string, arg interface{}) container.Map {
+	return func(datasource string, query string, arg interface{}) container.Map {
+		db := env.SelectDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
-			return ErrorResult(call, "Data source["+name+"] not found")
+			throwException("Data source[%s] not found", datasource)
 		}
-		sql_v := call.Argument(1)
-		if !sql_v.IsString() {
-			return ErrorResult(call, "SQL statement cannot be empty")
-		}
-		sql := strings.TrimSpace(sql_v.String()) //获取SQL
-		var arg interface{}
-		arg_v := call.Argument(2)
-		if arg_v.IsObject() {
-			arg_v, err := arg_v.Export()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsString() {
-			arg_v, err := arg_v.ToString()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsNumber() {
-			arg_int, err := arg_v.ToInteger()
-			if err == nil {
-				arg = arg_int
-			} else {
-				arg_float, err := arg_v.ToFloat()
-				if err != nil {
-					return ErrorResult(call, err.Error())
-				}
-				arg = arg_float
-			}
+		sql := strings.TrimSpace(query) //获取SQL
+		if sql == "" {
+			throwException("SQL statement cannot be empty")
 		}
 		m, err := db.QueryMap(sql, arg)
 		if err != nil {
-			return ErrorResult(call, err.Error())
+			throwException(err.Error())
 		}
-		return Result(call, m)
+		return m
 	}
 }
 
-func DBSave(env core.Environment) func(call js.FunctionCall) js.Value {
-	return func(call js.FunctionCall) (value js.Value) {
-		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
-		db := env.SelectDataSource(name)                     //获取数据源DB
+func DBSave(env core.Environment) func(datasource string, table string, arg interface{}) int64 {
+	return func(datasource string, table string, arg interface{}) int64 {
+		db := env.SelectDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
-			return ErrorResult(call, "Data source["+name+"] not found")
+			throwException("Data source[%s] not found", datasource)
 		}
-		table_v := call.Argument(1)
-		if !table_v.IsString() {
-			return ErrorResult(call, "Table name cannot be empty")
+		table = strings.TrimSpace(table)
+		if table == "" {
+			throwException("Table name cannot be empty")
 		}
-		table := strings.TrimSpace(table_v.String()) //获取SQL
-		arg_v := call.Argument(2)
-		if !arg_v.IsObject() {
-			return ErrorResult(call, "Parameter data type error")
+		if arg == nil {
+			throwException("Parameter cannot be empty")
 		}
-		arg, err := arg_v.Export()
-		if err != nil {
-			return ErrorResult(call, err.Error())
-		}
-		var num int64 = -1
 		m, ok := arg.(map[string]interface{})
 		if ok {
-			num, err = db.Save(m, table)
+			num, err := db.Save(m, table)
+			if err != nil {
+				throwException(err.Error())
+			}
+			return num
 		} else {
 			l, ok := arg.([]interface{})
 			if ok {
-				num, err = db.BatchSave(l, table)
+				num, err := db.BatchSave(l, table)
+				if err != nil {
+					throwException(err.Error())
+				}
+				return num
 			} else {
 				l, ok := arg.([]map[string]interface{})
 				if ok {
-					num, err = db.BatchSave(SliceParam(l), table)
+					num, err := db.BatchSave(SliceParam(l), table)
+					if err != nil {
+						throwException(err.Error())
+					}
+					return num
 				} else {
-					return ErrorResult(call, "Parameter data type error")
+					throwException("Parameter data type error")
+					return -1
 				}
 			}
 		}
-		if err != nil {
-			return ErrorResult(call, err.Error())
-		}
-		return Result(call, num)
 	}
 }
 
-func DBExec(env core.Environment) func(call js.FunctionCall) js.Value {
-	return func(call js.FunctionCall) (value js.Value) {
-		name := strings.TrimSpace(call.Argument(0).String()) //获取数据源名称
-		db := env.SelectDataSource(name)                     //获取数据源DB
+func DBExec(env core.Environment) func(datasource string, query string, arg interface{}) int64 {
+	return func(datasource string, query string, arg interface{}) int64 {
+		db := env.SelectDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
-			return ErrorResult(call, "Data source["+name+"] not found")
+			throwException("Data source[%s] not found", datasource)
 		}
-		sql_v := call.Argument(1)
-		if !sql_v.IsString() {
-			return ErrorResult(call, "SQL statement cannot be empty")
-		}
-		sql := strings.TrimSpace(sql_v.String()) //获取SQL
-		var arg interface{}
-		arg_v := call.Argument(2)
-		if arg_v.IsObject() {
-			arg_v, err := arg_v.Export()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsString() {
-			arg_v, err := arg_v.ToString()
-			if err != nil {
-				return ErrorResult(call, err.Error())
-			}
-			arg = arg_v
-		} else if arg_v.IsNumber() {
-			arg_int, err := arg_v.ToInteger()
-			if err == nil {
-				arg = arg_int
-			} else {
-				arg_float, err := arg_v.ToFloat()
-				if err != nil {
-					return ErrorResult(call, err.Error())
-				}
-				arg = arg_float
-			}
+		sql := strings.TrimSpace(query) //获取SQL
+		if sql == "" {
+			throwException("SQL statement cannot be empty")
 		}
 		//v, ok := arg.([]interface{})
 		//if !ok {
@@ -230,9 +130,9 @@ func DBExec(env core.Environment) func(call js.FunctionCall) js.Value {
 		//}
 		num, err := db.Exec(sql, arg)
 		if err != nil {
-			return ErrorResult(call, err.Error())
+			throwException(err.Error())
 		}
-		return Result(call, num)
+		return num
 	}
 }
 
