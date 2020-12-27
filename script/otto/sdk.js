@@ -59,21 +59,31 @@ var $ = {
         open: function (name) {
             var db = {
                 query: function (sql, arg, pageNumber, pageSize) {
-                    if (sql == undefined) {
-                        sql = "";
-                    }
-                    if (arg == undefined) {
-                        arg = {};
-                    }
-                    if (pageNumber == undefined) {
-                        pageNumber = 0;
-                    }
-                    if (pageSize == undefined) {
-                        pageSize = 10;
-                    }
                     var result = $.DB.Result.create();
                     try {
-                        result.setVal(_db_query(name, sql, arg, pageNumber, pageSize));
+                        if (sql == undefined || sql == null || sql == "") {
+                            result.setMsg("SQL statement cannot be empty")
+                            console.log("SQL statement cannot be empty")
+                        } else {
+                            if (arg == undefined) {
+                                arg = null;
+                            }
+                            if (pageNumber == undefined) {
+                                pageNumber = 0;
+                            } else {
+                                if (typeof pageNumber != "number") {
+                                    pageNumber = parseInt(pageNumber)
+                                }
+                            }
+                            if (pageSize == undefined) {
+                                pageSize = 10;
+                            } else {
+                                if (typeof pageSize != "number") {
+                                    pageSize = parseInt(pageSize)
+                                }
+                            }
+                            result.setVal(_db_query(name, sql, arg, pageNumber, pageSize));
+                        }
                     } catch (err) {
                         result.setMsg(err);
                         console.log(err);
@@ -81,15 +91,17 @@ var $ = {
                     return $.DB.DBPromise.create(result);
                 },
                 queryOne: function (sql, arg) {
-                    if (sql == undefined) {
-                        sql = "";
-                    }
-                    if (arg == undefined) {
-                        arg = {};
-                    }
                     var result = $.DB.Result.create();
                     try {
-                        result.setVal(_db_queryOne(name, sql, arg));
+                        if (sql == undefined || sql == null || sql == "") {
+                            result.setMsg("SQL statement cannot be empty")
+                            console.log("SQL statement cannot be empty")
+                        } else {
+                            if (arg == undefined) {
+                                arg = null;
+                            }
+                            result.setVal(_db_queryOne(name, sql, arg));
+                        }
                     } catch (err) {
                         result.setMsg(err);
                         console.log(err);
@@ -99,7 +111,7 @@ var $ = {
                 save: function (table, arg) {
                     var result = $.DB.Result.create();
                     try {
-                        if (table == undefined || table == "") {
+                        if (table == undefined || table == null || table == "") {
                             result.setMsg("Table name cannot be empty")
                             console.log("Table name cannot be empty")
                         } else if (arg == undefined || typeof arg != "object") {
@@ -117,10 +129,13 @@ var $ = {
                 exec: function (sql, arg) {
                     var result = $.DB.Result.create();
                     try {
-                        if (sql == undefined || sql == "") {
+                        if (sql == undefined || sql == null || sql == "") {
                             result.setMsg("SQL statement cannot be empty")
                             console.log("SQL statement cannot be empty")
                         } else {
+                            if (arg == undefined) {
+                                arg = {};
+                            }
                             result.setVal(_db_exec(name, sql, arg));
                         }
                     } catch (err) {
