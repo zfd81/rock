@@ -100,6 +100,7 @@ func (r *ParrotResource) Println(args ...interface{}) error {
 	r.log.WriteString(fmt.Sprintf("[INFO] %s ", time.Now().Format("2006-01-02 15:04:05.000")))
 	for _, arg := range args {
 		r.log.WriteString(cast.ToString(arg))
+		r.log.WriteString(" ")
 	}
 	r.log.WriteString("\n")
 	return nil
@@ -108,7 +109,7 @@ func (r *ParrotResource) Println(args ...interface{}) error {
 func (r *ParrotResource) Perror(args ...interface{}) error {
 	r.log.WriteString(fmt.Sprintf("[ERROR] %s ", time.Now().Format("2006-01-02 15:04:05.000")))
 	for _, arg := range args {
-		r.log.WriteString(errs.ErrorStyleFunc(cast.ToString(arg)))
+		r.log.WriteString(errs.ErrorStyleFunc(cast.ToString(arg), " "))
 	}
 	r.log.WriteString("\n")
 	return nil

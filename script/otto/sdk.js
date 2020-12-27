@@ -148,12 +148,6 @@ var $ = {
             return db
         }
     },
-    log: function (msg) {
-        _sys_log(msg);
-    },
-    err: function (msg) {
-        _sys_err(msg);
-    },
     resp: {
         status: function (resp) {
             return resp["StatusCode"];
@@ -219,6 +213,12 @@ var $ = {
     },
     define: function (definition) {
         __serv_definition = definition;
+    },
+    log: function () {
+        _sys_log(Array.prototype.slice.apply(arguments));
+    },
+    err: function () {
+        _sys_err(Array.prototype.slice.apply(arguments));
     },
     date: function () {
         var date = new Date()
