@@ -30,5 +30,5 @@ db.queryOne("select * from das_sys_user where name=:name and password=:pwd", {
         })
     })
     .catch(function (error) {
-        $.resp.write(error)
+        $.err(error)
     });
