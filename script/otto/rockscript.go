@@ -7,8 +7,6 @@ import (
 
 	"github.com/zfd81/rock/core"
 
-	"github.com/zfd81/rock/errs"
-
 	"github.com/gobuffalo/packr/v2"
 
 	js "github.com/robertkrimen/otto"
@@ -18,35 +16,6 @@ var (
 	sdkFile   = "sdk.js"
 	sdkSource string
 )
-
-type Function func(call js.FunctionCall) js.Value
-
-type FuncResult struct {
-	Normal     bool        `json:"-"`
-	StatusCode int         `json:"code"`
-	Data       interface{} `json:"data"`
-	Message    string      `json:"msg"`
-}
-
-func Result(call js.FunctionCall, data interface{}) (value js.Value) {
-	result := &FuncResult{
-		Normal:     true,
-		StatusCode: 200,
-		Data:       data,
-	}
-	value, _ = call.Otto.ToValue(result)
-	return
-}
-
-func ErrorResult(call js.FunctionCall, err string) (value js.Value) {
-	result := &FuncResult{
-		Normal:     false,
-		StatusCode: 400,
-		Message:    errs.ErrorStyleFunc(err),
-	}
-	value, _ = call.Otto.ToValue(result)
-	return
-}
 
 type JavaScriptImpl struct {
 	vm        *js.Otto

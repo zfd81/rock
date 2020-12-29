@@ -3,18 +3,16 @@ var $ = {
         use: function (name) {
             var kvs = {
                 get: function (key) {
-                    var result = _kv_get(name, key)
-                    if (result.Normal) {
-                        return result.Data
-                    } else {
-                        throw new Error(result.Message);
-                    }
+                    return _kv_get(name, key)
                 },
                 set: function (key, value, ttl) {
-                    var result = _kv_set(name, key, value, ttl)
-                    if (!result.Normal) {
-                        throw new Error(result.Message);
+                    if (key == undefined) {
+                        key = "";
                     }
+                    if (ttl == undefined) {
+                        ttl = 0;
+                    }
+                    _kv_set(name, key, value, ttl)
                 }
             }
             return kvs;
