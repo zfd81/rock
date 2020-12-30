@@ -54,6 +54,30 @@ func (se *JavaScriptImpl) AddFunc(name string, function interface{}) error {
 }
 
 func (se *JavaScriptImpl) CallFunc(name string, args ...interface{}) (interface{}, error) {
+	v, err := se.vm.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	if !v.IsFunction() {
+		return nil, fmt.Errorf("%s is not a function", name)
+	}
+	value, err := v.Call(v, args...)
+	if err != nil {
+		return nil, err
+	}
+	if value.IsString() {
+		return value.ToString()
+	} else if value.IsObject() {
+		return value.Export()
+	} else if value.IsNumber() {
+		val, err := value.ToInteger()
+		if err != nil {
+			return value.ToFloat()
+		}
+		return val, nil
+	} else if value.IsBoolean() {
+		return value.ToBoolean()
+	}
 	return nil, nil
 }
 func (se *JavaScriptImpl) GetSdk() string {

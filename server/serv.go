@@ -170,7 +170,7 @@ func wrapParam(c *gin.Context, resource Resource) error {
 
 func Router() http.Handler {
 	e := gin.New()
-	e.Use(gin.Logger(), gin.Recovery())
+	e.Use(Logger())
 	parrot := e.Group(conf.GetConfig().ServiceName)
 	{
 		parrot.GET("/*path", CallGetService)
