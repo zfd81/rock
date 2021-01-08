@@ -1,4 +1,4 @@
-package server
+package services
 
 import (
 	"github.com/zfd81/rock/meta"
