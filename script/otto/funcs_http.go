@@ -7,7 +7,7 @@ import (
 	"github.com/zfd81/rock/core"
 
 	js "github.com/robertkrimen/otto"
-	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/httpclient"
 )
 
 func HttpGet(call js.FunctionCall) (value js.Value) {
@@ -38,7 +38,7 @@ func HttpGet(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := http.Get(url, data, header)
+	resp := httpclient.Get(url, data, header)
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -71,7 +71,7 @@ func HttpPost(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := http.Post(url, data, header)
+	resp := httpclient.Post(url, data, header)
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -104,7 +104,7 @@ func HttpDelete(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := http.Delete(url, data, header)
+	resp := httpclient.Delete(url, data, header)
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -137,7 +137,7 @@ func HttpPut(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := http.Put(url, data, header)
+	resp := httpclient.Put(url, data, header)
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
