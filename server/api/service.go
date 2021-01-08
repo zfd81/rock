@@ -54,10 +54,7 @@ func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.ServRes
 
 	res := server.NewResource(serv)
 	if len(request.Params) > 0 {
-		for _, param := range res.GetPathParams() {
-			param.SetValue(request.Params[param.Name])
-		}
-		for _, param := range res.GetRequestParams() {
+		for _, param := range res.GetParams() {
 			val, found := request.Params[param.Name]
 			if !found {
 				return nil, fmt.Errorf("Parameter %s not found", param.Name)
@@ -251,7 +248,7 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 				return nil, errs.New(errs.ErrParamBad, "Service parameters definition error")
 			}
 			for _, param := range ps {
-				serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]))
+				serv.AddParam(cast.ToString(param["name"]), cast.ToString(param["dataType"]), cast.ToString(param["scope"]))
 			}
 		}
 		return serv, nil

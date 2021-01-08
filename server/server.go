@@ -152,21 +152,31 @@ func CallDeleteService(c *gin.Context) {
 }
 
 func wrapParam(c *gin.Context, resource core.Resource) error {
-	if len(resource.GetRequestParams()) > 0 {
+	if len(resource.GetParams()) > 0 {
 		p, err := param(c)
 		if err != nil {
 			return errs.NewError(err)
 		}
-		if p == nil || p.Empty() {
-			return errs.New(errs.ErrParamBad)
-		}
-		for _, param := range resource.GetRequestParams() {
-			val, found := p.Get(param.Name)
-			if !found {
-				return errs.New(errs.ErrParamNotFound, param.Name)
-			}
-			if err = param.SetValue(val); err != nil {
-				return errs.New(errs.ErrParamBad, err.Error())
+		//if p == nil || p.Empty() {
+		//	return errs.New(errs.ErrParamBad)
+		//}
+		for _, param := range resource.GetParams() {
+			if param.IsRequestScope() {
+				val, found := p.Get(param.Name)
+				if !found {
+					return errs.New(errs.ErrParamNotFound, param.Name)
+				}
+				if err = param.SetValue(val); err != nil {
+					return errs.New(errs.ErrParamBad, err.Error())
+				}
+			} else if param.IsHeaderScope() {
+				val := c.Request.Header.Get(param.Name)
+				if val == "" {
+					return errs.New(errs.ErrParamNotFound, param.Name)
+				}
+				if err = param.SetValue(val); err != nil {
+					return errs.New(errs.ErrParamBad, err.Error())
+				}
 			}
 		}
 	}

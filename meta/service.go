@@ -20,8 +20,8 @@ type Service struct {
 	Source    string       //服务执行的脚本
 }
 
-func (s *Service) AddParam(name string, dataType string) error {
-	param, err := NewParameter(name, dataType)
+func (s *Service) AddParam(name string, dataType string, scope string) error {
+	param, err := NewParameter(name, dataType, scope)
 	if err != nil {
 		return err
 	}

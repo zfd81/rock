@@ -17,6 +17,9 @@ const (
 	DataTypeStringArray  = "STRING[]"
 	DataTypeIntegerArray = "INT[]"
 	DataTypeMapArray     = "MAP[]"
+	ScopePath            = "PATH"
+	ScopeRequest         = "REQUEST"
+	ScopeHeader          = "HEADER"
 )
 
 type Parameter struct {
@@ -26,7 +29,8 @@ type Parameter struct {
 	value        interface{} // 参数值
 	DefaultValue interface{} `json:"omitempty"` // 参数默认值
 	Index        int         `json:"-"`         // 参数索引
-	Type         ParamType   `json:"-"`         //参数类型
+	//Type         ParamType   `json:"-"`         //参数类型
+	Scope string //参数的作用域
 }
 
 func (p *Parameter) SetValue(value interface{}) error {
@@ -76,7 +80,19 @@ func (p *Parameter) GetValue() interface{} {
 	return p.value
 }
 
-func NewParameter(name string, dataType string) (*Parameter, error) {
+func (p *Parameter) IsPathScope() bool {
+	return strings.ToUpper(p.Scope) == ScopePath
+}
+
+func (p *Parameter) IsRequestScope() bool {
+	return strings.ToUpper(p.Scope) == ScopeRequest
+}
+
+func (p *Parameter) IsHeaderScope() bool {
+	return strings.ToUpper(p.Scope) == ScopeHeader
+}
+
+func NewParameter(name string, dataType string, scope string) (*Parameter, error) {
 	if strings.ToUpper(dataType) != DataTypeString &&
 		strings.ToUpper(dataType) != DataTypeInteger &&
 		strings.ToUpper(dataType) != DataTypeBool &&
@@ -89,5 +105,6 @@ func NewParameter(name string, dataType string) (*Parameter, error) {
 	return &Parameter{
 		Name:     name,
 		DataType: dataType,
+		Scope:    scope,
 	}, nil
 }

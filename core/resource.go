@@ -22,10 +22,10 @@ type Resource interface {
 	GetPath() string
 	GetRegexPath() string
 	GetLevel() int
-	GetPathParams() []*meta.Parameter
+	GetParams() []*meta.Parameter
 	AddPathParam(param *meta.Parameter)
-	GetRequestParams() []*meta.Parameter
 	AddRequestParam(param *meta.Parameter)
+	AddHeaderParam(param *meta.Parameter)
 	Run() (log string, resp *httpclient.Response, err error)
 	Clear()
 }
