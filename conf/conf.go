@@ -14,7 +14,7 @@ type Config struct {
 	Banner       string        `mapstructure:"banner"`
 	Port         int           `mapstructure:"port"`
 	ServiceName  string        `mapstructure:"service-name"`
-	Namespaces   []string      `mapstructure:"namespaces"`
+	Namespace    string        `mapstructure:"namespace"`
 	Directory    string        `mapstructure:"directory"`
 	KVTTL        int64         `mapstructure:"kv-ttl"`
 	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
@@ -79,7 +79,7 @@ var defaultConf = Config{
 	Banner:       banner1,
 	Port:         8081,
 	ServiceName:  "/",
-	Namespaces:   []string{},
+	Namespace:    "__",
 	Directory:    "/rock",
 	KVTTL:        180,
 	ReadTimeout:  10,
