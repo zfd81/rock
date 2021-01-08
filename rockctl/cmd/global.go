@@ -6,7 +6,7 @@ import (
 
 	pb "github.com/zfd81/rock/proto/rockpb"
 
-	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/httpclient"
 	"google.golang.org/grpc"
 )
 
@@ -17,7 +17,7 @@ type GlobalFlags struct {
 }
 
 var (
-	client = http.New()
+	client = httpclient.New()
 )
 
 func url(path string) string {

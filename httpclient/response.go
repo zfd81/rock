@@ -1,4 +1,4 @@
-package http
+package httpclient
 
 import (
 	"github.com/spf13/cast"
