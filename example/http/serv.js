@@ -1,5 +1,5 @@
 $.define({
-    path: "/http/serv",
+    path: "/httpclient/serv",
     method: "get"
 })
 

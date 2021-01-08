@@ -207,6 +207,11 @@ var $ = {
             var resp = _http_put(url, param, header);
             var promise = this.HttpPromise.create(resp);
             return promise;
+        },
+        request: {
+            header: function () {
+                return _http_request_header;
+            }
         }
     },
     define: function (definition) {

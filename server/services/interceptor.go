@@ -1,32 +1,28 @@
-package core
+package services
 
 import (
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/zfd81/rock/meta"
+	"github.com/spf13/cast"
+
+	"github.com/zfd81/rock/core"
 )
 
 type Handler interface {
 	SetNextHandler(handler *Handler)
 	GetNextHandler() *Handler
 }
-type RockInterceptor struct {
-	namespace      string   //命名空间
-	group          string   //组
-	path           string   //模块路径
-	paths          []string //拦截路径
-	level          int      //拦截级别
-	requestSource  string   //请求拦截器
-	responseSource string   //响应拦截器
-}
 
-func (i *RockInterceptor) GetNamespace() string {
-	if i.namespace == "" {
-		return meta.DefaultNamespace
-	}
-	return i.namespace
+type RockInterceptor struct {
+	*RockModule
+	group           string        //组
+	paths           []string      //拦截路径
+	level           int           //拦截级别
+	requestHandler  core.Function //请求拦截器
+	responseHandler core.Function //响应拦截器
 }
 
 func (i *RockInterceptor) GetGroup() string {
@@ -34,6 +30,10 @@ func (i *RockInterceptor) GetGroup() string {
 }
 
 func (i *RockInterceptor) GetPaths() []string {
+	return i.paths
+}
+
+func (i *RockInterceptor) GetLevel() []string {
 	return i.paths
 }
 
@@ -80,24 +80,36 @@ func (i *RockInterceptor) Matches(path string) bool {
 	return false
 }
 
-func (i *RockInterceptor) SetRequestSource(src string) {
-	i.requestSource = src
+func (i *RockInterceptor) SetRequestHandler(function core.Function) {
+	i.requestHandler = function
 }
 
-func (i *RockInterceptor) SetResponseSource(src string) {
-	i.responseSource = src
+func (i *RockInterceptor) Request(request *http.Request, response *http.Response) (bool, error) {
+	if i.requestHandler != nil {
+		val, err := i.requestHandler.Perform(request, response)
+		return cast.ToBool(val), err
+	}
+	return true, nil
 }
 
-func (i *RockInterceptor) GetRequestInterceptor() string {
-	return i.requestSource
+func (i *RockInterceptor) SetResponseHandler(function core.Function) {
+	i.responseHandler = function
 }
 
-func (i *RockInterceptor) GetResponseInterceptor() string {
-	return i.responseSource
+func (i *RockInterceptor) Response(request *http.Request, response *http.Response) (bool, error) {
+	if i.responseHandler != nil {
+		val, err := i.responseHandler.Perform(request, response)
+		return cast.ToBool(val), err
+	}
+	return true, nil
 }
 
-func NewInterceptor() *RockInterceptor {
-	i := &RockInterceptor{}
+func NewInterceptor(module *RockModule, paths []string, level int) *RockInterceptor {
+	i := &RockInterceptor{
+		RockModule: module,
+		paths:      paths,
+		level:      level,
+	}
 	return i
 }
 

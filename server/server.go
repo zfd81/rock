@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/zfd81/rock/core"
+
 	"github.com/zfd81/rooster/types/container"
 
 	"github.com/zfd81/rock/conf"
@@ -34,7 +36,7 @@ func CallGetService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-
+	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -68,6 +70,7 @@ func CallPostService(c *gin.Context) {
 		return
 	}
 
+	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -101,6 +104,7 @@ func CallPutService(c *gin.Context) {
 		return
 	}
 
+	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -131,6 +135,7 @@ func CallDeleteService(c *gin.Context) {
 		return
 	}
 
+	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -146,7 +151,7 @@ func CallDeleteService(c *gin.Context) {
 	c.JSON(http.StatusOK, resp.Data)
 }
 
-func wrapParam(c *gin.Context, resource Resource) error {
+func wrapParam(c *gin.Context, resource core.Resource) error {
 	if len(resource.GetRequestParams()) > 0 {
 		p, err := param(c)
 		if err != nil {
@@ -170,13 +175,13 @@ func wrapParam(c *gin.Context, resource Resource) error {
 
 func Router() http.Handler {
 	e := gin.New()
-	e.Use(Logger())
-	parrot := e.Group(conf.GetConfig().ServiceName)
+	e.Use(Logger(), Interceptor())
+	rock := e.Group(conf.GetConfig().ServiceName)
 	{
-		parrot.GET("/*path", CallGetService)
-		parrot.POST("/*path", CallPostService)
-		parrot.PUT("/*path", CallPutService)
-		parrot.DELETE("/*path", CallDeleteService)
+		rock.GET("/*path", CallGetService)
+		rock.POST("/*path", CallPostService)
+		rock.PUT("/*path", CallPutService)
+		rock.DELETE("/*path", CallDeleteService)
 	}
 	return e
 }

@@ -18,7 +18,7 @@ import (
 
 	"github.com/zfd81/rock/meta"
 
-	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/httpclient"
 )
 
 const (
@@ -26,14 +26,9 @@ const (
 	LogFormat = "[LOG] %s "
 )
 
-type Context interface {
-	GetModule(path string) core.Module
-	GetDataSource(name string) core.DB
-}
-
 type ParrotResource struct {
 	namespace     string            //命名空间 注:不能包含"/"
-	context       Context           //上下文
+	context       core.Context      //上下文
 	se            core.Script       // 脚本引擎
 	method        string            // 资源请求方法
 	path          string            // 资源原始路径
@@ -42,11 +37,15 @@ type ParrotResource struct {
 	pathParams    []*meta.Parameter // 路径参数
 	requestParams []*meta.Parameter // 请求参数
 	log           *bytes.Buffer
-	resp          *http.Response
+	resp          *httpclient.Response
 }
 
-func (r *ParrotResource) SetContext(context Context) {
+func (r *ParrotResource) SetContext(context core.Context) {
 	r.context = context
+}
+
+func (r *ParrotResource) GetContext() core.Context {
+	return r.context
 }
 
 func (r *ParrotResource) GetMethod() string {
@@ -127,13 +126,20 @@ func (r *ParrotResource) SetRespData(data interface{}) {
 	r.resp.SetData(data)
 }
 
-func (r *ParrotResource) Run() (string, *http.Response, error) {
+func (r *ParrotResource) Run() (string, *httpclient.Response, error) {
+	//添加路径参数
 	for _, p := range r.pathParams {
 		r.se.AddVar(p.Name, p.GetValue())
 	}
+
+	//添加请求参数
 	for _, p := range r.requestParams {
 		r.se.AddVar(p.Name, p.GetValue())
 	}
+
+	//添加header
+	r.se.AddVar("_http_request_header", r.context.GetHeader())
+
 	err := r.se.Run()
 	if err != nil {
 		r.log.WriteString(fmt.Sprintf(LogFormat, time.Now().Format("2006-01-02 15:04:05.000")))
@@ -189,7 +195,7 @@ func NewResource(serv *meta.Service) *ParrotResource {
 		res.AddRequestParam(&param)
 	}
 	res.log = new(bytes.Buffer)
-	res.resp = &http.Response{
+	res.resp = &httpclient.Response{
 		Header: map[string]string{},
 	}
 	return res

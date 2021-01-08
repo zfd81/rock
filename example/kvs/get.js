@@ -11,11 +11,11 @@ var user = kvs.get("user")
 if (user != null) {
     $.log(user.name)
 }
-$.log(kvs.get("friend"))
-$.log(kvs.get("tels"))
+// $.log(kvs.get("friend")[1])
+// $.log(kvs.get("tels")[0])
 var users = kvs.get("users")
 if (users != null) {
     $.log(users[1].name)
 }
 
-$.log(typeof(kvs.get("friend")))
+$.log(typeof(kvs.get("aa")))

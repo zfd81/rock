@@ -2,15 +2,19 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/zfd81/rock/script"
+
+	"github.com/zfd81/rock/server/services"
+
+	"github.com/spf13/cast"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/rock/errs"
-
-	"github.com/zfd81/rock/script"
 
 	"github.com/zfd81/rock/core"
 
@@ -20,35 +24,29 @@ import (
 
 	"github.com/zfd81/rock/util/etcd"
 
-	"github.com/zfd81/rock/http"
+	"github.com/zfd81/rock/httpclient"
 	"github.com/zfd81/rock/meta"
 )
 
-type Resource interface {
-	SetContext(context core.Context)
-	GetNamespace() string
-	GetMethod() string
-	GetPath() string
-	GetRegexPath() string
-	GetLevel() int
-	GetPathParams() []*meta.Parameter
-	AddPathParam(param *meta.Parameter)
-	GetRequestParams() []*meta.Parameter
-	AddRequestParam(param *meta.Parameter)
-	Run() (log string, resp *http.Response, err error)
-	Clear()
-}
-
 type ResourceContext struct {
 	namespace string
+	header    http.Header
 }
 
-func (c *ResourceContext) GetModule(path string) script.Module {
+func (c *ResourceContext) GetModule(path string) core.Module {
 	return SelectModule(c.namespace, path)
 }
 
-func (c *ResourceContext) GetDataSource(name string) script.DB {
+func (c *ResourceContext) GetDataSource(name string) core.DB {
 	return SelectDataSource(c.namespace, name)
+}
+
+func (c *ResourceContext) SetHeader(header http.Header) {
+	c.header = header
+}
+
+func (c *ResourceContext) GetHeader() http.Header {
+	return c.header
 }
 
 func NewContext(namespace string) *ResourceContext {
@@ -60,23 +58,38 @@ func NewContext(namespace string) *ResourceContext {
 var (
 	config = conf.GetConfig()
 
-	modules   = map[string]script.Module{} //模块映射
-	resources = map[string]map[int][]Resource{
-		http.MethodGet:    map[int][]Resource{}, // GET资源映射
-		http.MethodPost:   map[int][]Resource{}, // POST资源映射
-		http.MethodPut:    map[int][]Resource{}, // PUT资源映射
-		http.MethodDelete: map[int][]Resource{}, // DELETE资源映射
+	interceptorChain = services.InterceptorChain{} //拦截器链
+	modules          = map[string]core.Module{}    //模块映射
+	resources        = map[string]map[int][]core.Resource{
+		httpclient.MethodGet:    map[int][]core.Resource{}, // GET资源映射
+		httpclient.MethodPost:   map[int][]core.Resource{}, // POST资源映射
+		httpclient.MethodPut:    map[int][]core.Resource{}, // PUT资源映射
+		httpclient.MethodDelete: map[int][]core.Resource{}, // DELETE资源映射
 	}
-
-	dbs = map[string]*core.ParrotDB{}
+	dbs = map[string]*core.RockDB{}
 )
 
-func AddModule(module script.Module) {
+func AddInterceptor(interceptor *services.RockInterceptor) {
+	interceptorChain.Add(interceptor)
+}
+
+func RemoveInterceptor(path string) {
+	interceptorChain.Remove(path)
+}
+
+func ModifyInterceptor(module core.Module) {
+}
+
+func GetInterceptorChain() services.InterceptorChain {
+	return interceptorChain
+}
+
+func AddModule(module core.Module) {
 	key := meta.FormatPath(module.GetNamespace()) + meta.FormatPath(module.GetPath())
 	modules[key] = module
 }
 
-func RemoveModule(namespace string, path string) script.Module {
+func RemoveModule(namespace string, path string) core.Module {
 	if namespace == "" {
 		namespace = meta.DefaultNamespace
 	}
@@ -86,10 +99,11 @@ func RemoveModule(namespace string, path string) script.Module {
 		delete(modules, key)
 		return value
 	}
+	RemoveInterceptor(path)
 	return nil
 }
 
-func SelectModule(namespace string, path string) script.Module {
+func SelectModule(namespace string, path string) core.Module {
 	if namespace == "" {
 		namespace = meta.DefaultNamespace
 	}
@@ -101,7 +115,7 @@ func SelectModule(namespace string, path string) script.Module {
 	return nil
 }
 
-func GetResourceSet(method string, level int) []Resource {
+func GetResourceSet(method string, level int) []core.Resource {
 	value, found := resources[method][level]
 	if found {
 		return value
@@ -109,12 +123,12 @@ func GetResourceSet(method string, level int) []Resource {
 	return nil
 }
 
-func AddResource(resource Resource) {
+func AddResource(resource core.Resource) {
 	method := resource.GetMethod()
 	level := resource.GetLevel()
 	rs := GetResourceSet(method, level)
 	if rs == nil {
-		rs = []Resource{}
+		rs = []core.Resource{}
 	}
 	resource.SetContext(&ResourceContext{
 		namespace: resource.GetNamespace(),
@@ -139,7 +153,7 @@ func RemoveResource(method string, path string) {
 	}
 }
 
-func SelectResource(method string, path string) Resource {
+func SelectResource(method string, path string) core.Resource {
 	if strings.HasSuffix(path, "/") {
 		path = path[0 : len(path)-1]
 	}
@@ -166,11 +180,9 @@ func SelectResource(method string, path string) Resource {
 }
 
 func InitResources() error {
-	namespace := meta.DefaultNamespace
-	if len(config.Namespaces) > 0 {
-		namespace = config.Namespaces[0]
-	}
-	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath(namespace))
+	log.Info("Start initializing resource information:")
+	namespace := config.Namespace
+	kvs, err := etcd.GetWithPrefix(meta.GetServiceRootPath(meta.FormatPath(namespace)))
 	cnt := 0
 	if err == nil {
 		for _, kv := range kvs {
@@ -178,18 +190,18 @@ func InitResources() error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			if serv.Method == http.MethodLocal {
-				m := core.NewModule(serv)
+			if serv.Method == httpclient.MethodLocal {
+				m := services.NewModule(serv)
 				AddModule(m)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
+				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
 			} else {
-				res := core.NewResource(serv)
+				res := NewResource(serv)
 				AddResource(res)
-				fmt.Printf("[INFO] Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
+				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			cnt++
 		}
-		color.Green("[INFO] A total of %d services were initialized \n", cnt)
+		log.Infof("Resource initialization completed, a total of %d services were initialized. \n", cnt)
 	}
 	return err
 }
@@ -202,7 +214,7 @@ func AddDataSource(ds *meta.DataSource) error {
 	return err
 }
 
-func RemoveDataSource(namespace string, name string) *core.ParrotDB {
+func RemoveDataSource(namespace string, name string) *core.RockDB {
 	if namespace == "" {
 		namespace = meta.DefaultNamespace
 	}
@@ -215,7 +227,7 @@ func RemoveDataSource(namespace string, name string) *core.ParrotDB {
 	return nil
 }
 
-func SelectDataSource(namespace string, name string) *core.ParrotDB {
+func SelectDataSource(namespace string, name string) *core.RockDB {
 	if namespace == "" {
 		namespace = meta.DefaultNamespace
 	}
@@ -228,31 +240,30 @@ func SelectDataSource(namespace string, name string) *core.ParrotDB {
 }
 
 func InitDbs() {
-	namespaces := config.Namespaces
-	namespaces = append(namespaces, meta.DefaultNamespace)
+	log.Info("Start initializing datasource information:")
+	namespace := config.Namespace
 	cnt := 0
 	ecnt := 0
-	for _, namespace := range namespaces {
-		kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath(namespace))
+	kvs, err := etcd.GetWithPrefix(meta.GetDataSourceRootPath(meta.FormatPath(namespace)))
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	for _, kv := range kvs {
+		ds, err := meta.NewDataSource(kv.Value)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-		for _, kv := range kvs {
-			ds, err := meta.NewDataSource(kv.Value)
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
-			err = AddDataSource(ds)
-			if err != nil {
-				fmt.Printf("[ERROR] %s \n", errs.ErrorStyleFunc("DataSource "+ds.Namespace+":"+ds.Name+" initialized failed: "+err.Error()))
-				ecnt++
-			} else {
-				fmt.Printf("[INFO] DataSource %s:%s initialized successfully \n", ds.Namespace, ds.Name)
-				cnt++
-			}
+		err = AddDataSource(ds)
+		namespace := cast.ToString(If(ds.Namespace == "", "default", ds.Namespace))
+		if err != nil {
+			log.Errorf("%s \n", errs.ErrorStyleFunc("DataSource "+namespace+":"+ds.Name+" initialized failed: "+err.Error()))
+			ecnt++
+		} else {
+			log.Infof("DataSource %s:%s initialized successfully \n", namespace, ds.Name)
+			cnt++
 		}
 	}
-	color.Green("[INFO] A total of %d datasources were initialized, %d succeeded and %d failed \n", cnt+ecnt, cnt, ecnt)
+	log.Infof("DataSource initialization completed, a total of %d datasources were initialized, %d succeeded and %d failed. \n", cnt+ecnt, cnt, ecnt)
 }
 
 func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevision int64, modRevision int64, version int64) {
@@ -267,12 +278,52 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				log.Fatalln(err)
 				return
 			}
-			if serv.Method == http.MethodLocal {
-				m := core.NewModule(serv)
-				AddModule(m)
-				fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
+			if serv.Method == httpclient.MethodLocal {
+				m := services.NewModule(serv)
+				fmt.Println("=================")
+				se := script.New()
+				se.AddScript(script.GetSdk())
+				se.AddScript("var exports={};")
+				se.AddScript(m.GetSource())
+				err := se.Run()
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				paths, err := se.GetMlVar("exports.interceptor.paths")
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				if paths != nil {
+					if val, ok := paths.([]string); ok {
+						level, _ := se.GetMlVar("exports.interceptor.paths")
+						interceptor := services.NewInterceptor(m, val, cast.ToInt(level))
+						requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
+						if err != nil {
+							log.Error(err)
+							return
+						}
+						if requestHandler != nil {
+							interceptor.SetRequestHandler(requestHandler)
+						}
+						responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
+						if err != nil {
+							log.Error(err)
+							return
+						}
+						if responseHandler != nil {
+							interceptor.SetResponseHandler(responseHandler)
+						}
+						AddInterceptor(interceptor)
+						fmt.Printf("[INFO] Interceptor %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
+					}
+				} else {
+					AddModule(m)
+					fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
+				}
 			} else {
-				res := core.NewResource(serv)
+				res := NewResource(serv)
 				AddResource(res)
 				fmt.Printf("[INFO] Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
@@ -299,13 +350,13 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				return
 			}
 			path := splitted[4]
-			if serv.Method == http.MethodLocal {
-				m := core.NewModule(serv)
+			if serv.Method == httpclient.MethodLocal {
+				m := services.NewModule(serv)
 				RemoveModule(serv.Namespace, serv.Path)
 				AddModule(m)
 				fmt.Printf("[INFO] Module %s: modified successfully \n", path)
 			} else {
-				res := core.NewResource(serv)
+				res := NewResource(serv)
 				RemoveResource(serv.Method, serv.Path)
 				AddResource(res)
 				fmt.Printf("[INFO] Service %s:%s modified successfully \n", res.GetMethod(), path)
@@ -317,7 +368,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 		case metaType == meta.ServiceDirectory[1:]:
 			method := splitted[3]
 			path := splitted[4]
-			if strings.ToUpper(method) == http.MethodLocal {
+			if strings.ToUpper(method) == httpclient.MethodLocal {
 				module := RemoveModule(namespace, path)
 				if module != nil {
 					fmt.Printf("[INFO] Module %s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
@@ -340,4 +391,11 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 
 func WatchMeta() {
 	etcd.WatchWithPrefix(meta.GetMetaRootPath(), metaWatcher)
+}
+
+func If(condition bool, trueVal, falseVal interface{}) interface{} {
+	if condition {
+		return trueVal
+	}
+	return falseVal
 }
