@@ -1,7 +1,10 @@
 package services
 
 import (
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"github.com/zfd81/rock/meta"
+	"github.com/zfd81/rock/script"
 )
 
 type RockModule struct {
@@ -28,6 +31,46 @@ func (m *RockModule) GetName() string {
 
 func (m *RockModule) GetSource() string {
 	return m.source
+}
+
+func (m *RockModule) GenerateInterceptor() *RockInterceptor {
+	se := script.New()
+	se.AddScript(script.GetSdk())
+	se.AddScript(m.GetSource())
+	err := se.Run()
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	paths, err := se.GetMlVar("exports.interceptor.paths")
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	if paths != nil {
+		if val, ok := paths.([]string); ok {
+			level, _ := se.GetMlVar("exports.interceptor.level")
+			interceptor := NewInterceptor(m, val, cast.ToInt(level))
+			requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
+			if requestHandler != nil {
+				interceptor.SetRequestHandler(requestHandler)
+			}
+			responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
+			if responseHandler != nil {
+				interceptor.SetResponseHandler(responseHandler)
+			}
+			return interceptor
+		}
+	}
+	return nil
 }
 
 func NewModule(serv *meta.Service) *RockModule {

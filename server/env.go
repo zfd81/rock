@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/zfd81/rock/script"
-
 	"github.com/zfd81/rock/server/services"
 
 	"github.com/spf13/cast"
@@ -99,7 +97,6 @@ func RemoveModule(namespace string, path string) core.Module {
 		delete(modules, key)
 		return value
 	}
-	RemoveInterceptor(path)
 	return nil
 }
 
@@ -194,8 +191,8 @@ func InitResources() error {
 			}
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
+				i := m.GenerateInterceptor()
 				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), "LOCAL", meta.FormatPath(m.GetPath()))
-				i := GenerateInterceptor(m)
 				if i != nil {
 					AddInterceptor(i)
 					log.Infof(" --> Interceptor initialized successfully \n")
@@ -288,51 +285,18 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			}
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
-				se := script.New()
-				se.AddScript(script.GetSdk())
-				se.AddScript("var exports={};")
-				se.AddScript(m.GetSource())
-				err := se.Run()
-				if err != nil {
-					log.Error(err)
-					return
-				}
-				paths, err := se.GetMlVar("exports.interceptor.paths")
-				if err != nil {
-					log.Error(err)
-					return
-				}
-				if paths != nil {
-					if val, ok := paths.([]string); ok {
-						level, _ := se.GetMlVar("exports.interceptor.paths")
-						interceptor := services.NewInterceptor(m, val, cast.ToInt(level))
-						requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
-						if err != nil {
-							log.Error(err)
-							return
-						}
-						if requestHandler != nil {
-							interceptor.SetRequestHandler(requestHandler)
-						}
-						responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
-						if err != nil {
-							log.Error(err)
-							return
-						}
-						if responseHandler != nil {
-							interceptor.SetResponseHandler(responseHandler)
-						}
-						AddInterceptor(interceptor)
-						fmt.Printf("[INFO] Interceptor %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
-					}
+				i := m.GenerateInterceptor()
+				log.Infof("Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), meta.FormatPath(m.GetPath()))
+				if i != nil {
+					AddInterceptor(i)
+					log.Infof(" --> Interceptor created successfully \n")
 				} else {
 					AddModule(m)
-					fmt.Printf("[INFO] Module %s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), meta.FormatPath(m.GetPath()))
 				}
 			} else {
 				res := NewResource(serv)
 				AddResource(res)
-				fmt.Printf("[INFO] Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
+				log.Infof("Service %s:%s:%s created successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			break
 		case metaType == meta.DataSourceDirectory[1:]:
@@ -360,7 +324,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
 				log.Infof("Module %s: modified successfully \n", path)
-				i := GenerateInterceptor(m)
+				i := m.GenerateInterceptor()
 				if i != nil {
 					RemoveInterceptor(i.GetPath())
 					AddInterceptor(i)
@@ -385,7 +349,7 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			if strings.ToUpper(method) == httpclient.MethodLocal {
 				module := RemoveModule(namespace, path)
 				if module != nil {
-					fmt.Printf("[INFO] Module %s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
+					log.Infof("Module %s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), path)
 				}
 				i := RemoveInterceptor(path)
 				if i != nil {
@@ -393,58 +357,18 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				}
 			} else {
 				RemoveResource(method, path)
-				fmt.Printf("[INFO] Service %s:%s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), strings.ToUpper(method), path)
+				log.Infof("Service %s:%s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), strings.ToUpper(method), path)
 			}
 			break
 		case metaType == meta.DataSourceDirectory[1:]:
 			name := splitted[3]
 			db := RemoveDataSource(namespace, name)
 			if db != nil {
-				fmt.Printf("[INFO] DataSource %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace, "", 1), db.Name)
+				log.Infof("DataSource %s:%s deleted successfully \n", strings.Replace(db.GetNamespace(), meta.DefaultNamespace[1:], "default", 1), db.Name)
 			}
 			break
 		}
 	}
-}
-
-func GenerateInterceptor(module core.Module) *services.RockInterceptor {
-	se := script.New()
-	se.AddScript(script.GetSdk())
-	se.AddScript(module.GetSource())
-	err := se.Run()
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-	paths, err := se.GetMlVar("exports.interceptor.paths")
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-	if paths != nil {
-		if val, ok := paths.([]string); ok {
-			level, _ := se.GetMlVar("exports.interceptor.paths")
-			interceptor := services.NewInterceptor(module.(*services.RockModule), val, cast.ToInt(level))
-			requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
-			if err != nil {
-				log.Error(err)
-				return nil
-			}
-			if requestHandler != nil {
-				interceptor.SetRequestHandler(requestHandler)
-			}
-			responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
-			if err != nil {
-				log.Error(err)
-				return nil
-			}
-			if responseHandler != nil {
-				interceptor.SetResponseHandler(responseHandler)
-			}
-			return interceptor
-		}
-	}
-	return nil
 }
 
 func WatchMeta() {
