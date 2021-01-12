@@ -223,6 +223,8 @@ func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
 	se.AddFunc("_db_exec", DBExec(se.processor))
 	se.AddFunc("_kv_get", KvGet(se.processor))
 	se.AddFunc("_kv_set", KvSet(se.processor))
+	se.AddFunc("_jwt_create", CreateToken)
+	se.AddFunc("_jwt_parse", ParseToken)
 	return se
 }
 

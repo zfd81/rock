@@ -267,5 +267,16 @@ var $ = {
         }
         var reg = new RegExp(suffix + "$");
         return reg.test(str);
+    },
+    jwt: {
+        create: function (data, secret, second) {
+            if (second == undefined) {
+                second = 1 * 60;
+            }
+            return _jwt_create(data, secret, second)
+        },
+        parse: function (token, secret) {
+            return _jwt_parse(token, secret)
+        }
     }
 };

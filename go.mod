@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dop251/goja v0.0.0-20201221183957-6b6d5e2b5d80
 	github.com/dustin/go-humanize v1.0.0 // indirect
