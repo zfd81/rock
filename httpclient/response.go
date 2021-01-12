@@ -1,12 +1,8 @@
 package httpclient
 
-import (
-	"github.com/spf13/cast"
-)
-
 type Response struct {
 	StatusCode int
-	Header     map[string]string
+	Header     Header
 	Content    string
 	Data       interface{}
 }
@@ -15,12 +11,12 @@ func (r *Response) SetStatusCode(code int) {
 	r.StatusCode = code
 }
 
-func (r *Response) AddHeader(name string, value interface{}) {
-	r.Header[name] = cast.ToString(value)
+func (r *Response) GetHeader(name string) string {
+	return r.Header.Get(name)
 }
 
-func (r *Response) SetHeader(header map[string]string) {
-	r.Header = header
+func (r *Response) AddHeader(name string, value interface{}) {
+	r.Header.Set(name, value)
 }
 
 func (r *Response) SetContent(json string) {
@@ -33,7 +29,7 @@ func (r *Response) SetData(data interface{}) {
 
 func (r *Response) Clear() {
 	r.StatusCode = 0
-	r.Header = map[string]string{}
+	r.Header.Clear()
 	r.Content = ""
 	r.Data = nil
 }
@@ -41,7 +37,7 @@ func (r *Response) Clear() {
 func NewResponse() *Response {
 	return &Response{
 		StatusCode: 0,
-		Header:     map[string]string{},
+		Header:     Header{},
 		Content:    "",
 		Data:       nil,
 	}

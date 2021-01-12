@@ -2,15 +2,15 @@ package httpclient
 
 import "github.com/spf13/cast"
 
-type Header map[string]interface{}
+type Header map[string]string
 
-func (h Header) Set(key, value string) {
-	h[key] = value
+func (h Header) Set(key string, value interface{}) {
+	h[key] = cast.ToString(value)
 }
 
 func (h Header) Get(key string) string {
 	if v, ok := h[key]; ok {
-		return cast.ToString(v)
+		return v
 	} else {
 		return ""
 	}
@@ -33,7 +33,12 @@ func (h Header) Clone() Header {
 	}
 	cloneh := Header{}
 	for k, v := range h {
-		cloneh.Set(k, cast.ToString(v))
+		cloneh.Set(k, v)
 	}
 	return cloneh
+}
+
+func (h Header) Clear() Header {
+	h = map[string]string{}
+	return h
 }

@@ -73,8 +73,8 @@ func AddInterceptor(interceptor *services.RockInterceptor) {
 	interceptorChain.Add(interceptor)
 }
 
-func RemoveInterceptor(path string) {
-	interceptorChain.Remove(path)
+func RemoveInterceptor(path string) *services.RockInterceptor {
+	return interceptorChain.Remove(meta.FormatPath(path))
 }
 
 func ModifyInterceptor(module core.Module) {
@@ -194,12 +194,18 @@ func InitResources() error {
 			}
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
-				AddModule(m)
-				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), "LOCAL", meta.FormatPath(m.GetPath()))
+				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), "LOCAL", meta.FormatPath(m.GetPath()))
+				i := GenerateInterceptor(m)
+				if i != nil {
+					AddInterceptor(i)
+					log.Infof(" --> Interceptor initialized successfully \n")
+				} else {
+					AddModule(m)
+				}
 			} else {
 				res := NewResource(serv)
 				AddResource(res)
-				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
+				log.Infof("Service %s:%s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), res.GetMethod(), meta.FormatPath(res.GetPath()))
 			}
 			cnt++
 		}
@@ -282,7 +288,6 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			}
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
-				fmt.Println("=================")
 				se := script.New()
 				se.AddScript(script.GetSdk())
 				se.AddScript("var exports={};")
@@ -354,9 +359,16 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			path := splitted[4]
 			if serv.Method == httpclient.MethodLocal {
 				m := services.NewModule(serv)
-				RemoveModule(serv.Namespace, serv.Path)
-				AddModule(m)
-				fmt.Printf("[INFO] Module %s: modified successfully \n", path)
+				log.Infof("Module %s: modified successfully \n", path)
+				i := GenerateInterceptor(m)
+				if i != nil {
+					RemoveInterceptor(i.GetPath())
+					AddInterceptor(i)
+					log.Infof(" --> Interceptor modified successfully \n")
+				} else {
+					RemoveModule(serv.Namespace, serv.Path)
+					AddModule(m)
+				}
 			} else {
 				res := NewResource(serv)
 				RemoveResource(serv.Method, serv.Path)
@@ -375,6 +387,10 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 				if module != nil {
 					fmt.Printf("[INFO] Module %s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), path)
 				}
+				i := RemoveInterceptor(path)
+				if i != nil {
+					log.Infof(" --> Interceptor deleted successfully \n")
+				}
 			} else {
 				RemoveResource(method, path)
 				fmt.Printf("[INFO] Service %s:%s:%s deleted successfully \n", strings.Replace(namespace, meta.DefaultNamespace, "", 1), strings.ToUpper(method), path)
@@ -389,6 +405,46 @@ func metaWatcher(operType etcd.OperType, key []byte, value []byte, createRevisio
 			break
 		}
 	}
+}
+
+func GenerateInterceptor(module core.Module) *services.RockInterceptor {
+	se := script.New()
+	se.AddScript(script.GetSdk())
+	se.AddScript(module.GetSource())
+	err := se.Run()
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	paths, err := se.GetMlVar("exports.interceptor.paths")
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	if paths != nil {
+		if val, ok := paths.([]string); ok {
+			level, _ := se.GetMlVar("exports.interceptor.paths")
+			interceptor := services.NewInterceptor(module.(*services.RockModule), val, cast.ToInt(level))
+			requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
+			if requestHandler != nil {
+				interceptor.SetRequestHandler(requestHandler)
+			}
+			responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
+			if responseHandler != nil {
+				interceptor.SetResponseHandler(responseHandler)
+			}
+			return interceptor
+		}
+	}
+	return nil
 }
 
 func WatchMeta() {

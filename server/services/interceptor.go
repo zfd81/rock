@@ -1,10 +1,11 @@
 package services
 
 import (
-	"net/http"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/zfd81/rock/httpclient"
 
 	"github.com/spf13/cast"
 
@@ -84,7 +85,7 @@ func (i *RockInterceptor) SetRequestHandler(function core.Function) {
 	i.requestHandler = function
 }
 
-func (i *RockInterceptor) Request(request *http.Request, response *http.Response) (bool, error) {
+func (i *RockInterceptor) Request(request *httpclient.Request, response *httpclient.Response) (bool, error) {
 	if i.requestHandler != nil {
 		val, err := i.requestHandler.Perform(request, response)
 		return cast.ToBool(val), err
@@ -96,7 +97,7 @@ func (i *RockInterceptor) SetResponseHandler(function core.Function) {
 	i.responseHandler = function
 }
 
-func (i *RockInterceptor) Response(request *http.Request, response *http.Response) (bool, error) {
+func (i *RockInterceptor) Response(request *httpclient.Request, response *httpclient.Response) (bool, error) {
 	if i.responseHandler != nil {
 		val, err := i.responseHandler.Perform(request, response)
 		return cast.ToBool(val), err
@@ -133,14 +134,14 @@ func (c *InterceptorChain) Add(interceptor *RockInterceptor) *InterceptorChain {
 	return c
 }
 
-func (c *InterceptorChain) Remove(path string) *InterceptorChain {
+func (c *InterceptorChain) Remove(path string) *RockInterceptor {
 	for i, v := range *c {
 		if v.path == path {
 			*c = append((*c)[:i], (*c)[i+1:]...)
-			break
+			return v
 		}
 	}
-	return c
+	return nil
 }
 
 func (c *InterceptorChain) Modify(interceptor *RockInterceptor) *InterceptorChain {

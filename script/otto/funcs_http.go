@@ -38,7 +38,7 @@ func HttpGet(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := httpclient.Get(url, data, header)
+	resp := httpclient.Get(url, data, ToHeader(header))
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -71,7 +71,7 @@ func HttpPost(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := httpclient.Post(url, data, header)
+	resp := httpclient.Post(url, data, ToHeader(header))
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -104,7 +104,7 @@ func HttpDelete(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := httpclient.Delete(url, data, header)
+	resp := httpclient.Delete(url, data, ToHeader(header))
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -137,7 +137,7 @@ func HttpPut(call js.FunctionCall) (value js.Value) {
 			}
 		}
 	}
-	resp := httpclient.Put(url, data, header)
+	resp := httpclient.Put(url, data, ToHeader(header))
 	value, _ = call.Otto.ToValue(*resp)
 	return
 }
@@ -193,4 +193,12 @@ func RespWrite(process core.Processor) func(call js.FunctionCall) js.Value {
 		}
 		return js.Value{}
 	}
+}
+
+func ToHeader(h map[string]interface{}) httpclient.Header {
+	header := httpclient.Header{}
+	for k, v := range h {
+		header.Set(k, v)
+	}
+	return header
 }

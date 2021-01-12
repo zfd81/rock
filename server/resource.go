@@ -193,7 +193,7 @@ func NewResource(serv *meta.Service) *RockResource {
 	}
 	res.log = new(bytes.Buffer)
 	res.resp = &httpclient.Response{
-		Header: map[string]string{},
+		Header: httpclient.Header{},
 	}
 	return res
 }

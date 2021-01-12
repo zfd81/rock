@@ -42,7 +42,7 @@ func (hc *HttpClient) do(req *http.Request, header Header) (*Response, error) {
 
 	response := &Response{
 		StatusCode: resp.StatusCode,
-		Header:     map[string]string{},
+		Header:     Header{},
 		Content:    string(body),
 	}
 
