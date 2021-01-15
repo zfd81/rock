@@ -3,15 +3,22 @@ package services
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
+	"github.com/zfd81/rock/core"
 	"github.com/zfd81/rock/meta"
 	"github.com/zfd81/rock/script"
 )
 
 type RockModule struct {
+	env       core.Environment
 	namespace string //命名空间 注:不能包含"/"
 	path      string // 模块访问路径
 	name      string //模块名称
 	source    string //源码
+}
+
+func (m *RockModule) SetEnvironment(env core.Environment) *RockModule {
+	m.env = env
+	return m
 }
 
 func (m *RockModule) GetNamespace() string {
@@ -19,6 +26,14 @@ func (m *RockModule) GetNamespace() string {
 		return meta.DefaultNamespace
 	}
 	return m.namespace
+}
+
+func (r *RockModule) GetModule(path string) core.Module {
+	return r.env.SelectModule(r.GetNamespace(), path)
+}
+
+func (r *RockModule) GetDataSource(name string) core.DB {
+	return r.env.SelectDataSource(r.GetNamespace(), name)
 }
 
 func (m *RockModule) GetPath() string {
@@ -34,7 +49,7 @@ func (m *RockModule) GetSource() string {
 }
 
 func (m *RockModule) GenerateInterceptor() *RockInterceptor {
-	se := script.New()
+	se := script.NewWithContext(m)
 	se.AddScript(script.GetSdk())
 	se.AddScript(m.GetSource())
 	err := se.Run()

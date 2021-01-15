@@ -9,6 +9,10 @@ func New() core.Script {
 	return otto.New()
 }
 
+func NewWithContext(ctx core.Context) core.Script {
+	return otto.NewWithContext(ctx)
+}
+
 func NewWithProcessor(processor core.Processor) core.Script {
 	return otto.NewWithProcessor(processor)
 }

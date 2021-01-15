@@ -1,8 +1,9 @@
-package server
+package services
 
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -27,8 +28,8 @@ const (
 )
 
 type RockResource struct {
+	env       core.Environment
 	namespace string            //命名空间 注:不能包含"/"
-	context   core.Context      //上下文
 	se        core.Script       // 脚本引擎
 	method    string            // 资源请求方法
 	path      string            // 资源原始路径
@@ -37,14 +38,20 @@ type RockResource struct {
 	params    []*meta.Parameter // 服务参数
 	log       *bytes.Buffer
 	resp      *httpclient.Response
+	header    http.Header
 }
 
-func (r *RockResource) SetContext(context core.Context) {
-	r.context = context
+func (r *RockResource) SetEnvironment(env core.Environment) *RockResource {
+	r.env = env
+	return r
 }
 
-func (r *RockResource) GetContext() core.Context {
-	return r.context
+func (r *RockResource) GetModule(path string) core.Module {
+	return r.env.SelectModule(r.GetNamespace(), path)
+}
+
+func (r *RockResource) GetDataSource(name string) core.DB {
+	return r.env.SelectDataSource(r.GetNamespace(), name)
 }
 
 func (r *RockResource) GetMethod() string {
@@ -87,14 +94,6 @@ func (r *RockResource) GetNamespace() string {
 		return meta.DefaultNamespace
 	}
 	return r.namespace
-}
-
-func (r *RockResource) SelectModule(path string) core.Module {
-	return r.context.GetModule(path)
-}
-
-func (r *RockResource) SelectDataSource(name string) core.DB {
-	return r.context.GetDataSource(name)
 }
 
 func (r *RockResource) Println(args ...interface{}) error {

@@ -12,7 +12,7 @@ import (
 	"github.com/zfd81/rock/meta/dai"
 )
 
-func KvGet(process core.Processor) func(name, key string) interface{} {
+func KvGet(context core.Context) func(name, key string) interface{} {
 	return func(name, key string) interface{} {
 		name = strings.TrimSpace(name) //获取kvs名称
 		if name == "" {
@@ -22,7 +22,7 @@ func KvGet(process core.Processor) func(name, key string) interface{} {
 		if key == "" {
 			throwException("KV key cannot be empty")
 		}
-		kv, err := dai.GetKV(process.GetNamespace(), meta.FormatPath(name)+"/"+key)
+		kv, err := dai.GetKV(context.GetNamespace(), meta.FormatPath(name)+"/"+key)
 		if err != nil {
 			throwException(err.Error())
 		}
@@ -33,7 +33,7 @@ func KvGet(process core.Processor) func(name, key string) interface{} {
 	}
 }
 
-func KvSet(process core.Processor) func(name, key string, value interface{}, ttl int64) {
+func KvSet(context core.Context) func(name, key string, value interface{}, ttl int64) {
 	return func(name, key string, value interface{}, ttl int64) {
 		name = strings.TrimSpace(name) //获取kvs名称
 		if name == "" {
@@ -50,7 +50,7 @@ func KvSet(process core.Processor) func(name, key string, value interface{}, ttl
 			ttl = conf.GetConfig().KVTTL
 		}
 		kv := &meta.KV{
-			Namespace: process.GetNamespace(),
+			Namespace: context.GetNamespace(),
 			KvsName:   name,
 			Key:       key,
 			TTL:       ttl,

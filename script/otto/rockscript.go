@@ -54,10 +54,10 @@ func (f RockFunction) Perform(args ...interface{}) (interface{}, error) {
 }
 
 type JavaScriptImpl struct {
-	vm        *js.Otto
-	sdk       string
-	script    *bytes.Buffer
-	processor core.Processor
+	vm      *js.Otto
+	sdk     string
+	script  *bytes.Buffer
+	context core.Context
 }
 
 func (se *JavaScriptImpl) AddVar(name string, value interface{}) error {
@@ -206,23 +206,31 @@ func New() *JavaScriptImpl {
 	return se
 }
 
+func NewWithContext(ctx core.Context) *JavaScriptImpl {
+	se := New()
+	se.context = ctx
+	se.AddFunc("require", SysRequire(se.context))
+
+	return se
+}
+
 func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
 	se := New()
-	se.processor = processor
+	se.context = processor
 	se.AddFunc("_http_get", HttpGet)
 	se.AddFunc("_http_post", HttpPost)
 	se.AddFunc("_http_delete", HttpDelete)
 	se.AddFunc("_http_put", HttpPut)
-	se.AddFunc("_sys_log", SysLog(se.processor))
-	se.AddFunc("_sys_err", SysError(se.processor))
-	se.AddFunc("require", SysRequire(se.processor))
-	se.AddFunc("_resp_write", RespWrite(se.processor))
-	se.AddFunc("_db_query", DBQuery(se.processor))
-	se.AddFunc("_db_queryOne", DBQueryOne(se.processor))
-	se.AddFunc("_db_save", DBSave(se.processor))
-	se.AddFunc("_db_exec", DBExec(se.processor))
-	se.AddFunc("_kv_get", KvGet(se.processor))
-	se.AddFunc("_kv_set", KvSet(se.processor))
+	se.AddFunc("_sys_log", SysLog(se.context.(core.Processor)))
+	se.AddFunc("_sys_err", SysError(se.context.(core.Processor)))
+	se.AddFunc("require", SysRequire(se.context))
+	se.AddFunc("_resp_write", RespWrite(se.context.(core.Processor)))
+	se.AddFunc("_db_query", DBQuery(se.context))
+	se.AddFunc("_db_queryOne", DBQueryOne(se.context))
+	se.AddFunc("_db_save", DBSave(se.context))
+	se.AddFunc("_db_exec", DBExec(se.context))
+	se.AddFunc("_kv_get", KvGet(se.context))
+	se.AddFunc("_kv_set", KvSet(se.context))
 	se.AddFunc("_jwt_create", CreateToken)
 	se.AddFunc("_jwt_parse", ParseToken)
 	return se

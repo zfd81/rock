@@ -24,14 +24,14 @@ type Script interface {
 	Run() error
 }
 
-type Environment interface {
+type Context interface {
 	GetNamespace() string
-	SelectModule(path string) Module
-	SelectDataSource(name string) DB
+	GetModule(path string) Module
+	GetDataSource(name string) DB
 }
 
 type Processor interface {
-	Environment
+	Context
 	Println(args ...interface{}) error
 	Perror(args ...interface{}) error
 	SetRespStatus(code int)
@@ -39,14 +39,9 @@ type Processor interface {
 	SetRespData(data interface{})
 }
 
-type Module interface {
-	GetNamespace() string
-	GetPath() string
-	GetName() string
-	GetSource() string
-}
-
 type DB interface {
+	GetNamespace() string
+	GetName() string
 	QueryMap(query string, arg interface{}) (container.Map, error)
 	QueryMapList(query string, arg interface{}, pageNumber int, pageSize int) ([]container.Map, error)
 	Query(query string, arg interface{}) (*rsql.Rows, error)

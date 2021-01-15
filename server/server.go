@@ -22,7 +22,7 @@ func param(c *gin.Context) (container.Map, error) {
 
 func CallGetService(c *gin.Context) {
 	path := c.Param("path")
-	resource := SelectResource(http.MethodGet, path)
+	resource := env.SelectResource(http.MethodGet, path)
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
@@ -36,7 +36,6 @@ func CallGetService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -54,7 +53,7 @@ func CallGetService(c *gin.Context) {
 
 func CallPostService(c *gin.Context) {
 	path := c.Param("path")
-	resource := SelectResource(http.MethodPost, path)
+	resource := env.SelectResource(http.MethodPost, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -70,7 +69,6 @@ func CallPostService(c *gin.Context) {
 		return
 	}
 
-	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -88,7 +86,7 @@ func CallPostService(c *gin.Context) {
 
 func CallPutService(c *gin.Context) {
 	path := c.Param("path")
-	resource := SelectResource(http.MethodPut, path)
+	resource := env.SelectResource(http.MethodPut, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -104,7 +102,6 @@ func CallPutService(c *gin.Context) {
 		return
 	}
 
-	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {
@@ -122,7 +119,7 @@ func CallPutService(c *gin.Context) {
 
 func CallDeleteService(c *gin.Context) {
 	path := c.Param("path")
-	resource := SelectResource(http.MethodDelete, path)
+	resource := env.SelectResource(http.MethodDelete, path)
 
 	if resource == nil {
 		c.JSON(http.StatusNotFound, errs.New(404, "Target service["+path+"] not exist."))
@@ -135,7 +132,6 @@ func CallDeleteService(c *gin.Context) {
 		return
 	}
 
-	resource.GetContext().SetHeader(c.Request.Header)
 	log, resp, err := resource.Run()
 
 	if err != nil {

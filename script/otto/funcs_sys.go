@@ -23,10 +23,10 @@ func SysError(process core.Processor) func(msgs []interface{}) {
 	}
 }
 
-func SysRequire(process core.Processor) func(call js.FunctionCall) js.Value {
+func SysRequire(process core.Context) func(call js.FunctionCall) js.Value {
 	return func(call js.FunctionCall) (value js.Value) {
-		path := strings.TrimSpace(call.Argument(0).String())  //获取依赖路径
-		module := process.SelectModule(meta.FormatPath(path)) //获取模块
+		path := strings.TrimSpace(call.Argument(0).String()) //获取依赖路径
+		module := process.GetModule(meta.FormatPath(path))   //获取模块
 		if module == nil || reflect.ValueOf(module).IsNil() {
 			throwException("Module path[%s] not found", path)
 		}

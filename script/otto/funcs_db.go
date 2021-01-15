@@ -9,9 +9,9 @@ import (
 	"github.com/zfd81/rock/core"
 )
 
-func DBQuery(env core.Environment) func(datasource string, query string, arg interface{}, pageNumber int, pageSize int) []container.Map {
+func DBQuery(env core.Context) func(datasource string, query string, arg interface{}, pageNumber int, pageSize int) []container.Map {
 	return func(datasource string, query string, arg interface{}, pageNumber int, pageSize int) []container.Map {
-		db := env.SelectDataSource(datasource) //获取数据源DB
+		db := env.GetDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
 			throwException("Data source[%s] not found", datasource)
 		}
@@ -42,9 +42,9 @@ func DBQuery(env core.Environment) func(datasource string, query string, arg int
 	}
 }
 
-func DBQueryOne(env core.Environment) func(datasource string, query string, arg interface{}) container.Map {
+func DBQueryOne(env core.Context) func(datasource string, query string, arg interface{}) container.Map {
 	return func(datasource string, query string, arg interface{}) container.Map {
-		db := env.SelectDataSource(datasource) //获取数据源DB
+		db := env.GetDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
 			throwException("Data source[%s] not found", datasource)
 		}
@@ -60,9 +60,9 @@ func DBQueryOne(env core.Environment) func(datasource string, query string, arg 
 	}
 }
 
-func DBSave(env core.Environment) func(datasource string, table string, arg interface{}) int64 {
+func DBSave(env core.Context) func(datasource string, table string, arg interface{}) int64 {
 	return func(datasource string, table string, arg interface{}) int64 {
-		db := env.SelectDataSource(datasource) //获取数据源DB
+		db := env.GetDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
 			throwException("Data source[%s] not found", datasource)
 		}
@@ -105,9 +105,9 @@ func DBSave(env core.Environment) func(datasource string, table string, arg inte
 	}
 }
 
-func DBExec(env core.Environment) func(datasource string, query string, arg interface{}) int64 {
+func DBExec(env core.Context) func(datasource string, query string, arg interface{}) int64 {
 	return func(datasource string, query string, arg interface{}) int64 {
-		db := env.SelectDataSource(datasource) //获取数据源DB
+		db := env.GetDataSource(datasource) //获取数据源DB
 		if reflect.ValueOf(db).IsNil() {
 			throwException("Data source[%s] not found", datasource)
 		}

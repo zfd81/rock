@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zfd81/rock/server"
+
+	"github.com/zfd81/rock/server/services"
+
 	"github.com/zfd81/rock/script"
 
 	log "github.com/sirupsen/logrus"
 	pb "github.com/zfd81/rock/proto/rockpb"
-
-	"github.com/zfd81/rock/server"
 
 	"github.com/spf13/cast"
 	"github.com/zfd81/rock/errs"
@@ -52,7 +54,7 @@ func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.ServRes
 
 	}
 
-	res := server.NewResource(serv)
+	res := services.NewResource(serv).SetEnvironment(server.GetEnvironment())
 	if len(request.Params) > 0 {
 		for _, param := range res.GetParams() {
 			val, found := request.Params[param.Name]
@@ -64,7 +66,6 @@ func (d *Service) Test(ctx context.Context, request *pb.RpcRequest) (*pb.ServRes
 			}
 		}
 	}
-	res.SetContext(server.NewContext(res.GetNamespace()))
 	log, resp, err := res.Run()
 	if err != nil {
 		return nil, fmt.Errorf(log)
@@ -257,7 +258,8 @@ func SourceAnalysis(source string) (*meta.Service, error) {
 
 func ModuleAnalysis(source string) (*meta.Service, error) {
 	serv := &meta.Service{}
-	se := script.New()
+	m := services.NewModule(serv).SetEnvironment(server.GetEnvironment())
+	se := script.NewWithContext(m)
 	se.AddScript(script.GetSdk())
 	se.AddScript("var exports={};")
 	se.AddScript(source)
