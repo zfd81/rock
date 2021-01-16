@@ -9,20 +9,21 @@ import (
 )
 
 type Config struct {
-	Name         string        `mapstructure:"name"`
-	Version      string        `mapstructure:"version"`
-	Banner       string        `mapstructure:"banner"`
-	Port         int           `mapstructure:"port"`
-	ServiceName  string        `mapstructure:"service-name"`
-	Namespace    string        `mapstructure:"namespace"`
-	Directory    string        `mapstructure:"directory"`
-	KVTTL        int64         `mapstructure:"kv-ttl"`
-	ReadTimeout  time.Duration `mapstructure:"read-timeout"`
-	WriteTimeout time.Duration `mapstructure:"write-timeout"`
-	APIServer    APIServer     `mapstructure:"api-server"`
-	Meta         Meta          `mapstructure:"meta"`
-	Etcd         Etcd          `mapstructure:"etcd"`
-	Cluster      Cluster       `mapstructure:"cluster"`
+	Name              string        `mapstructure:"name"`
+	Version           string        `mapstructure:"version"`
+	Banner            string        `mapstructure:"banner"`
+	Port              int           `mapstructure:"port"`
+	ServiceName       string        `mapstructure:"service-name"`
+	Namespace         string        `mapstructure:"namespace"`
+	Directory         string        `mapstructure:"directory"`
+	KVTTL             int64         `mapstructure:"kv-ttl"`
+	ReadTimeout       time.Duration `mapstructure:"read-timeout"`
+	WriteTimeout      time.Duration `mapstructure:"write-timeout"`
+	APIServer         APIServer     `mapstructure:"api-server"`
+	Meta              Meta          `mapstructure:"meta"`
+	Etcd              Etcd          `mapstructure:"etcd"`
+	Cluster           Cluster       `mapstructure:"cluster"`
+	HttpClientTimeout time.Duration `mapstructure:"httpclient-timeout"`
 }
 
 type APIServer struct {
@@ -102,6 +103,7 @@ var defaultConf = Config{
 		HeartbeatInterval:        9,
 		HeartbeatRecheckInterval: 5,
 	},
+	HttpClientTimeout: 10,
 }
 
 var globalConf = defaultConf

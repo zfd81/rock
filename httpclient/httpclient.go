@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zfd81/rock/conf"
+
 	"github.com/spf13/cast"
 	"github.com/zfd81/rooster/util"
 )
@@ -111,16 +113,16 @@ func (hc *HttpClient) Delete(url string, data interface{}, header Header) (resp 
 	return hc.do(req, header)
 }
 
-func New(second int) *HttpClient {
+func New(second time.Duration) *HttpClient {
 	return &HttpClient{
 		client: &http.Client{
-			Timeout: time.Second * time.Duration(second),
+			Timeout: time.Second * second,
 		},
-		Timeout: time.Duration(second),
+		Timeout: second,
 	}
 }
 
-var client = New(10)
+var client = New(conf.GetConfig().HttpClientTimeout)
 
 func Get(url string, data map[string]interface{}, header Header) *Response {
 	response := &Response{StatusCode: 500}

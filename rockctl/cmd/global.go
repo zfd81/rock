@@ -17,7 +17,7 @@ type GlobalFlags struct {
 }
 
 var (
-	client = httpclient.New()
+	client = httpclient.New(5)
 )
 
 func url(path string) string {
