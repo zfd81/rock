@@ -111,13 +111,16 @@ func (hc *HttpClient) Delete(url string, data interface{}, header Header) (resp 
 	return hc.do(req, header)
 }
 
-func New() *HttpClient {
+func New(second int) *HttpClient {
 	return &HttpClient{
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: time.Second * time.Duration(second),
+		},
+		Timeout: time.Duration(second),
 	}
 }
 
-var client = New()
+var client = New(10)
 
 func Get(url string, data map[string]interface{}, header Header) *Response {
 	response := &Response{StatusCode: 500}
