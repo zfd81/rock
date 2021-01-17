@@ -181,7 +181,6 @@ func (se *JavaScriptImpl) GetSdk() string {
 
 func (se *JavaScriptImpl) SetScript(src string) {
 	se.script.Reset()
-	se.script.WriteString(se.sdk)
 	se.script.WriteString(src)
 }
 
@@ -190,7 +189,7 @@ func (se *JavaScriptImpl) AddScript(src string) {
 }
 
 func (se *JavaScriptImpl) Run() (err error) {
-	_, err = se.vm.Run(se.script.String())
+	_, err = se.vm.Run(se.sdk + se.script.String())
 	return
 }
 
@@ -210,7 +209,6 @@ func NewWithContext(ctx core.Context) *JavaScriptImpl {
 	se := New()
 	se.context = ctx
 	se.AddFunc("require", SysRequire(se.context))
-
 	return se
 }
 

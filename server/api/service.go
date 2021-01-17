@@ -260,22 +260,13 @@ func ModuleAnalysis(source string) (*meta.Service, error) {
 	serv := &meta.Service{}
 	m := services.NewModule(serv).SetEnvironment(server.GetEnvironment())
 	se := script.NewWithContext(m)
-	se.AddScript(script.GetSdk())
-	se.AddScript("var exports={};")
+	se.AddScript("var module = {};")
 	se.AddScript(source)
 	err := se.Run()
 	if err != nil {
 		return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
 	}
-	value, err := se.GetVar("exports")
-	if err != nil {
-		return nil, errs.New(errs.ErrParamBad, "Module definition error:"+err.Error())
-	}
-	module, ok := value.(map[string]interface{})
-	if !ok {
-		return nil, errs.New(errs.ErrParamBad, "Module definition error")
-	}
-	value = module["define"]
+	value, err := se.GetMlVar("module.exports.define")
 	define, ok := value.(map[string]interface{})
 	if !ok {
 		return nil, errs.New(errs.ErrParamBad, "Module definition error")

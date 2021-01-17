@@ -23,22 +23,31 @@ func SysError(process core.Processor) func(msgs []interface{}) {
 	}
 }
 
-func SysRequire(process core.Context) func(call js.FunctionCall) js.Value {
+func SysRequire(ctx core.Context) func(call js.FunctionCall) js.Value {
 	return func(call js.FunctionCall) (value js.Value) {
 		path := strings.TrimSpace(call.Argument(0).String()) //获取依赖路径
-		module := process.GetModule(meta.FormatPath(path))   //获取模块
+		module := ctx.GetModule(meta.FormatPath(path))       //获取模块
 		if module == nil || reflect.ValueOf(module).IsNil() {
 			throwException("Module path[%s] not found", path)
 		}
-		call.Otto.Set("exports", map[string]interface{}{})
-		_, err := call.Otto.Run(module.GetSource())
+		_, err := call.Otto.Run("var module = {};" + module.GetSource())
 		if err != nil {
-			return js.NullValue()
+			throwException(err.Error())
 		}
-		m_v, err := call.Otto.Get("exports")
+		v, err := call.Otto.Get("module")
 		if err != nil {
-			return js.NullValue()
+			throwException(err.Error())
 		}
-		return m_v
+		if !v.IsObject() {
+			throwException("Module %s definition error", path)
+		}
+		v, err = v.Object().Get("exports")
+		if err != nil {
+			throwException(err.Error())
+		}
+		if !v.IsObject() {
+			throwException("Module %s definition error", path)
+		}
+		return v
 	}
 }

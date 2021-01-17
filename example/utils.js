@@ -1,4 +1,4 @@
-exports = {
+module.exports = {
     define: {
         path: "/example/utils",
     },

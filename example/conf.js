@@ -1,6 +1,6 @@
 var u = require("/example/utils") //获得配置模块
 
-exports = {
+module.exports = {
     define:{
         path: "/example/conf",
     },
