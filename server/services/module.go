@@ -50,23 +50,23 @@ func (m *RockModule) GetSource() string {
 
 func (m *RockModule) GenerateInterceptor() *RockInterceptor {
 	se := script.NewWithContext(m)
-	se.AddScript(script.GetSdk())
+	se.AddScript("var module = {};")
 	se.AddScript(m.GetSource())
 	err := se.Run()
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
-	paths, err := se.GetMlVar("exports.interceptor.paths")
+	paths, err := se.GetMlVar("module.exports.interceptor.paths")
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 	if paths != nil {
 		if val, ok := paths.([]string); ok {
-			level, _ := se.GetMlVar("exports.interceptor.level")
+			level, _ := se.GetMlVar("module.exports.interceptor.level")
 			interceptor := NewInterceptor(m, val, cast.ToInt(level))
-			requestHandler, err := se.GetMlFunc("exports.interceptor.requestHandler")
+			requestHandler, err := se.GetMlFunc("module.exports.interceptor.requestHandler")
 			if err != nil {
 				log.Error(err)
 				return nil
@@ -74,7 +74,7 @@ func (m *RockModule) GenerateInterceptor() *RockInterceptor {
 			if requestHandler != nil {
 				interceptor.SetRequestHandler(requestHandler)
 			}
-			responseHandler, err := se.GetMlFunc("exports.interceptor.responseHandler")
+			responseHandler, err := se.GetMlFunc("module.exports.interceptor.responseHandler")
 			if err != nil {
 				log.Error(err)
 				return nil
