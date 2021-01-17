@@ -209,19 +209,19 @@ func NewWithContext(ctx core.Context) *JavaScriptImpl {
 	se := New()
 	se.context = ctx
 	se.AddFunc("require", SysRequire(se.context))
-	return se
-}
-
-func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
-	se := New()
-	se.context = processor
 	se.AddFunc("_http_get", HttpGet)
 	se.AddFunc("_http_post", HttpPost)
 	se.AddFunc("_http_delete", HttpDelete)
 	se.AddFunc("_http_put", HttpPut)
+	se.AddFunc("_jwt_create", CreateToken)
+	se.AddFunc("_jwt_parse", ParseToken)
+	return se
+}
+
+func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
+	se := NewWithContext(processor)
 	se.AddFunc("_sys_log", SysLog(se.context.(core.Processor)))
 	se.AddFunc("_sys_err", SysError(se.context.(core.Processor)))
-	se.AddFunc("require", SysRequire(se.context))
 	se.AddFunc("_resp_write", RespWrite(se.context.(core.Processor)))
 	se.AddFunc("_db_query", DBQuery(se.context))
 	se.AddFunc("_db_queryOne", DBQueryOne(se.context))
@@ -229,8 +229,7 @@ func NewWithProcessor(processor core.Processor) *JavaScriptImpl {
 	se.AddFunc("_db_exec", DBExec(se.context))
 	se.AddFunc("_kv_get", KvGet(se.context))
 	se.AddFunc("_kv_set", KvSet(se.context))
-	se.AddFunc("_jwt_create", CreateToken)
-	se.AddFunc("_jwt_parse", ParseToken)
+
 	return se
 }
 
