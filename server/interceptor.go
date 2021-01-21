@@ -17,6 +17,7 @@ func Interceptor() gin.HandlerFunc {
 			normal := true
 			req := httpclient.NewRequest(c.Request)
 			resp := httpclient.NewResponse()
+			resp.StatusCode = http.StatusOK
 			s := container.NewArrayStack()
 			path := req.GetPath()
 			for _, i := range chain {
@@ -53,7 +54,7 @@ func Interceptor() gin.HandlerFunc {
 				}
 			}
 			if resp.Data != nil {
-				c.JSON(http.StatusOK, resp.Data)
+				c.JSON(resp.StatusCode, resp.Data)
 			}
 			c.Abort()
 		} else {
