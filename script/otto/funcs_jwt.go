@@ -50,11 +50,23 @@ func ParseToken(tokenString string, secret string) map[string]interface{} {
 	return nil
 }
 
-func CreateRS256Token(data map[string]interface{}, privatekey string, second int) string {
-	key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privatekey))
+func Privatekey(privatekey string) interface{} {
+	key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privatekey)) //解析私钥
 	if err != nil {
 		throwException(err.Error())
 	}
+	return key
+}
+
+func Publickey(publickey string) interface{} {
+	key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publickey)) //解析公钥
+	if err != nil {
+		throwException(err.Error())
+	}
+	return key
+}
+
+func CreateRS256Token(data map[string]interface{}, privatekey interface{}, second int) string {
 	now := time.Now()
 	claims := jwt.MapClaims{}
 	for k, v := range data {
@@ -63,23 +75,19 @@ func CreateRS256Token(data map[string]interface{}, privatekey string, second int
 	claims["iat"] = now.Unix()                                          //签发日期
 	claims["exp"] = now.Add(time.Second * time.Duration(second)).Unix() //到期时间
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	tokenString, err := token.SignedString(key)
+	tokenString, err := token.SignedString(privatekey)
 	if err != nil {
 		throwException(err.Error())
 	}
 	return tokenString
 }
 
-func ParseRSAToken(tokenString string, publickey string) map[string]interface{} {
-	key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publickey)) //解析公钥
-	if err != nil {
-		throwException(err.Error())
-	}
+func ParseRSAToken(tokenString string, publickey interface{}) map[string]interface{} {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
-		return key, nil
+		return publickey, nil
 	})
 	if err != nil {
 		if ve, ok := err.(*jwt.ValidationError); ok {
