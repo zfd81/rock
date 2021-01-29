@@ -12,13 +12,16 @@ import (
 
 func HttpGet(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
+	if strings.TrimSpace(url) == "" {
+		throwException("Url cannot be empty")
+	}
 	var data map[string]interface{}
 	var header map[string]interface{}
 	data_v := call.Argument(1)
 	if data_v.IsObject() {
 		data_v, err := data_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := data_v.(map[string]interface{})
 			if ok {
@@ -30,7 +33,7 @@ func HttpGet(call js.FunctionCall) (value js.Value) {
 	if header_v.IsObject() {
 		header_v, err := header_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := header_v.(map[string]interface{})
 			if ok {
@@ -45,13 +48,16 @@ func HttpGet(call js.FunctionCall) (value js.Value) {
 
 func HttpPost(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
+	if strings.TrimSpace(url) == "" {
+		throwException("Url cannot be empty")
+	}
 	var data map[string]interface{}
 	var header map[string]interface{}
 	data_v := call.Argument(1)
 	if data_v.IsObject() {
 		data_v, err := data_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := data_v.(map[string]interface{})
 			if ok {
@@ -63,7 +69,7 @@ func HttpPost(call js.FunctionCall) (value js.Value) {
 	if header_v.IsObject() {
 		header_v, err := header_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := header_v.(map[string]interface{})
 			if ok {
@@ -78,13 +84,16 @@ func HttpPost(call js.FunctionCall) (value js.Value) {
 
 func HttpDelete(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
+	if strings.TrimSpace(url) == "" {
+		throwException("Url cannot be empty")
+	}
 	var data map[string]interface{}
 	var header map[string]interface{}
 	data_v := call.Argument(1)
 	if data_v.IsObject() {
 		data_v, err := data_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := data_v.(map[string]interface{})
 			if ok {
@@ -96,7 +105,7 @@ func HttpDelete(call js.FunctionCall) (value js.Value) {
 	if header_v.IsObject() {
 		header_v, err := header_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := header_v.(map[string]interface{})
 			if ok {
@@ -111,13 +120,16 @@ func HttpDelete(call js.FunctionCall) (value js.Value) {
 
 func HttpPut(call js.FunctionCall) (value js.Value) {
 	url := strings.TrimSpace(call.Argument(0).String())
+	if strings.TrimSpace(url) == "" {
+		throwException("Url cannot be empty")
+	}
 	var data map[string]interface{}
 	var header map[string]interface{}
 	data_v := call.Argument(1)
 	if data_v.IsObject() {
 		data_v, err := data_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := data_v.(map[string]interface{})
 			if ok {
@@ -129,7 +141,7 @@ func HttpPut(call js.FunctionCall) (value js.Value) {
 	if header_v.IsObject() {
 		header_v, err := header_v.Export()
 		if err != nil {
-			log.Panicln(err)
+			throwException(err.Error())
 		} else {
 			val, ok := header_v.(map[string]interface{})
 			if ok {
