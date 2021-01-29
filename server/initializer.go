@@ -72,7 +72,7 @@ func InitModules(kvs []*mvccpb.KeyValue) error {
 			log.Infof("Module %s:%s initialized successfully \n", strings.Replace(namespace, meta.DefaultNamespace[1:], "default", 1), meta.FormatPath(m.GetPath()))
 			if i != nil {
 				AddInterceptor(i)
-				log.Infof("  ->   Interceptor initialized successfully \n")
+				log.Infof(">>>>>> Interceptor initialized successfully \n")
 			} else {
 				env.AddModule(m)
 			}
