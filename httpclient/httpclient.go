@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/zfd81/rock/conf"
 
@@ -129,13 +130,13 @@ func Get(url string, data map[string]interface{}, header Header) *Response {
 
 	url, err := wrapPath(url, data)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
 	resp, err := client.Get(url, data, header)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
@@ -147,13 +148,13 @@ func Post(url string, data map[string]interface{}, header Header) *Response {
 
 	url, err := wrapPath(url, data)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
 	resp, err := client.Post(url, "application/json;charset=UTF-8", data, header)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
@@ -165,7 +166,7 @@ func PostForm(reqUrl string, data map[string]interface{}, header Header) *Respon
 
 	reqUrl, err := wrapPath(reqUrl, data)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
@@ -177,7 +178,7 @@ func PostForm(reqUrl string, data map[string]interface{}, header Header) *Respon
 	}
 	resp, err := client.PostForm(reqUrl, values, header)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
@@ -189,13 +190,13 @@ func Put(url string, data map[string]interface{}, header Header) *Response {
 
 	url, err := wrapPath(url, data)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
 	resp, err := client.Put(url, data, header)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
@@ -207,13 +208,13 @@ func Delete(url string, data map[string]interface{}, header Header) *Response {
 
 	url, err := wrapPath(url, data)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
 	resp, err := client.Delete(url, data, header)
 	if err != nil {
-		log.Println(err)
+		log.Error(err.Error())
 		return response
 	}
 
