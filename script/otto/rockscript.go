@@ -215,6 +215,8 @@ func NewWithContext(ctx core.Context) *JavaScriptImpl {
 	se.AddFunc("_http_put", HttpPut)
 	se.AddFunc("_jwt_create", CreateToken)
 	se.AddFunc("_jwt_parse", ParseToken)
+	se.AddFunc("_log_info", LogInfo)
+	se.AddFunc("_log_error", LogError)
 	return se
 }
 

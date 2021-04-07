@@ -278,5 +278,13 @@ var $ = {
         parse: function (token, secret) {
             return _jwt_parse(token, secret)
         }
+    },
+    log: {
+        info: function () {
+            _log_info(Array.prototype.slice.apply(arguments));
+        },
+        error: function () {
+            _log_error(Array.prototype.slice.apply(arguments));
+        }
     }
 };
