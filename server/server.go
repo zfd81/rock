@@ -16,6 +16,14 @@ import (
 
 func param(c *gin.Context) (container.Map, error) {
 	p := container.JsonMap{}
+	queryMap := c.Request.URL.Query() //获得URL中的参数
+	for k, vals := range queryMap {
+		if len(vals) == 1 {
+			p.Put(k, vals[0])
+		} else {
+			p.Put(k, vals)
+		}
+	}
 	err := c.ShouldBind(&p)
 	return p, err
 }
