@@ -268,6 +268,36 @@ var $ = {
         var reg = new RegExp(suffix + "$");
         return reg.test(str);
     },
+    lpad: function (str, length, padstr) {
+        if (str == null || length < 0)
+            return str;
+        var len = length - str.length;
+        if (len > 0) {
+            for (var i = 0; i < len; i++) {
+                str = padstr + str
+            }
+            return str;
+        } else if (len == 0) {
+            return str;
+        } else {
+            return str.substring(0, length);
+        }
+    },
+    rpad: function (str, length, padstr) {
+        if (str == null || length < 0)
+            return str;
+        var len = length - str.length;
+        if (len > 0) {
+            for (var i = 0; i < len; i++) {
+                str = str + padstr
+            }
+            return str;
+        } else if (len == 0) {
+            return str;
+        } else {
+            return str.substring(0, length);
+        }
+    },
     jwt: {
         create: function (data, secret, second) {
             if (second == undefined) {
