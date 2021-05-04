@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/zfd81/rock/core"
 
 	"github.com/zfd81/rooster/types/container"
@@ -64,6 +66,7 @@ func CallPostService(c *gin.Context) {
 	resource := env.SelectResource(http.MethodPost, path)
 
 	if resource == nil {
+		log.Error("Target service[" + path + "] not exist.")
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
 			"msg":  "Target service[" + path + "] not exist.",
@@ -73,16 +76,18 @@ func CallPostService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	log, resp, err := resource.Run()
+	logInfo, resp, err := resource.Run()
 
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  log,
+			"msg":  logInfo,
 		})
 		return
 	}
