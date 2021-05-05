@@ -34,6 +34,7 @@ func CallGetService(c *gin.Context) {
 	path := c.Param("path")
 	resource := env.SelectResource(http.MethodGet, path)
 	if resource == nil {
+		log.Error("Target service[" + path + "] not exist.")
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
 			"msg":  "Target service[" + path + "] not exist.",
@@ -43,15 +44,17 @@ func CallGetService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	log, resp, err := resource.Run()
+	loginfo, resp, err := resource.Run()
 
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  log,
+			"msg":  loginfo,
 		})
 		return
 	}
@@ -81,13 +84,13 @@ func CallPostService(c *gin.Context) {
 		return
 	}
 
-	logInfo, resp, err := resource.Run()
+	loginfo, resp, err := resource.Run()
 
 	if err != nil {
 		log.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  logInfo,
+			"msg":  loginfo,
 		})
 		return
 	}
@@ -102,6 +105,7 @@ func CallPutService(c *gin.Context) {
 	resource := env.SelectResource(http.MethodPut, path)
 
 	if resource == nil {
+		log.Error("Target service[" + path + "] not exist.")
 		c.JSON(http.StatusNotFound, gin.H{
 			"code": 404,
 			"msg":  "Target service[" + path + "] not exist.",
@@ -111,16 +115,18 @@ func CallPutService(c *gin.Context) {
 
 	err := wrapParam(c, resource)
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	log, resp, err := resource.Run()
+	loginfo, resp, err := resource.Run()
 
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  log,
+			"msg":  loginfo,
 		})
 		return
 	}
@@ -135,22 +141,25 @@ func CallDeleteService(c *gin.Context) {
 	resource := env.SelectResource(http.MethodDelete, path)
 
 	if resource == nil {
+		log.Error("Target service[" + path + "] not exist.")
 		c.JSON(http.StatusNotFound, errs.New(404, "Target service["+path+"] not exist."))
 		return
 	}
 
 	err := wrapParam(c, resource)
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	log, resp, err := resource.Run()
+	loginfo, resp, err := resource.Run()
 
 	if err != nil {
+		log.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  log,
+			"msg":  loginfo,
 		})
 		return
 	}
